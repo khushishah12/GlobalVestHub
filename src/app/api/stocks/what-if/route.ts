@@ -119,10 +119,14 @@ export async function POST(request: NextRequest) {
     const period1 = Math.floor(start.getTime() / 1000) - 86400 * 14;
     const period2 = Math.floor(end.getTime() / 1000) + 86400;
 
-    const [stockPrices, benchPrices] = await Promise.all([
-      fetchDailyPrices(symbol, period1, period2),
-      fetchDailyPrices('^NSEI', period1, period2),
-    ]);
+    const trySymbols = symbol.includes('.') ? [symbol] : [`${symbol}.NS`, `${symbol}.BO`, symbol];
+    let stockPrices: PricePoint[] = [];
+    let usedSymbol = '';
+    for (const sym of trySymbols) {
+      const prices = await fetchDailyPrices(sym, period1, period2);
+      if (prices.length >= 5) { stockPrices = prices; usedSymbol = sym; break; }
+    }
+    const benchPrices = await fetchDailyPrices('^NSEI', period1, period2);
 
     if (stockPrices.length < 5) {
       return NextResponse.json({ error: `No historical data found for "${symbol}"` }, { status: 404 });

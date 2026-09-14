@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import YahooFinance from 'yahoo-finance2';
 import { supabaseAdmin } from '@/lib/supabase';
 import { runSql } from '@/lib/run-sql';
-import { detectAllPatterns } from '@/lib/chart-patterns';
+import { detectAllPatterns, type PatternResult } from '@/lib/chart-patterns';
 
 const yahooFinance = new YahooFinance();
 
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const chartResults = await Promise.allSettled(chartPromises);
 
-    const allPatterns: any[] = [];
+    const allPatterns: PatternResult[] = []
 
     for (let i = 0; i < timeframesToScan.length; i++) {
       const tf = timeframesToScan[i];

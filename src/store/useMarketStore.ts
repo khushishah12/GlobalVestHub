@@ -85,30 +85,24 @@ export const useMarketStore = create<MarketState>((set, get) => ({
 
   fetchData: async () => {
     try {
-      // In a real app, this would query Next.js API endpoints.
-      // We implement API fetching with standard mock fallbacks.
-      const [candlesRes, signalRes, newsRes, indicatorsRes] = await Promise.all([
+      const [candlesRes, newsRes, indicatorsRes] = await Promise.all([
         fetch('/api/market-data').catch(() => null),
-        fetch('/api/ai-prediction').catch(() => null),
         fetch('/api/news').catch(() => null),
         fetch('/api/indicators').catch(() => null),
       ]);
 
       const candles = candlesRes ? await candlesRes.json() : mockCandles;
-      const aiSignal = signalRes ? await signalRes.json() : mockAISignal;
       const news = newsRes ? await newsRes.json() : mockNews;
       const indicators = indicatorsRes ? await indicatorsRes.json() : mockIndicators;
 
       set({
         candles,
-        aiSignal,
         news,
         indicators,
         livePrice: candles[candles.length - 1]?.close || get().livePrice,
       });
     } catch (e) {
       console.warn("Failed to fetch API routes, using local mock data", e);
-      // Fallback is already initialized in state
     }
   },
 }));

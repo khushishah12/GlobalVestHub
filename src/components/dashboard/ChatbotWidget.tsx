@@ -146,7 +146,7 @@ export default function ChatbotWidget() {
       {/* ── Floating icon ── */}
       <button
         onClick={() => setOpen(true)}
-        className="group fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/25 transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-cyan-500/40 active:scale-95"
+        className="group fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#D4A657] to-[#8C7440] text-[#171207] shadow-lg shadow-[#D4A657]/25 transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-[#D4A657]/40 active:scale-95"
         aria-label="Open stock assistant"
         suppressHydrationWarning
       >
@@ -161,23 +161,23 @@ export default function ChatbotWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 300, damping: 28, mass: 0.8 }}
-            className="fixed bottom-24 right-6 z-50 flex w-[380px] max-w-[calc(100vw-2rem)] flex-col rounded-2xl border border-white/[0.08] bg-[#0f1729] shadow-2xl shadow-black/60"
+            className="fixed bottom-24 right-6 z-50 flex w-[380px] max-w-[calc(100vw-2rem)] flex-col rounded-[4px] border border-[#26314A] bg-[#0B111C] shadow-2xl shadow-black/60"
             style={{ maxHeight: 'min(600px, calc(100vh - 120px))' }}
           >
             {/* ── Header ── */}
-            <div className="flex items-center justify-between rounded-t-2xl border-b border-white/[0.06] bg-gradient-to-r from-cyan-500/10 to-blue-500/5 px-5 py-4">
+            <div className="flex items-center justify-between rounded-t-[4px] border-b border-[#1B2438] bg-gradient-to-r from-[#D4A657]/10 to-transparent px-5 py-4">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 ring-1 ring-cyan-400/20">
-                  <Sparkles className="h-4 w-4 text-cyan-300" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-[3px] bg-[#D4A657]/15 ring-1 ring-[#D4A657]/25">
+                  <Sparkles className="h-4 w-4 text-[#D4A657]" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-white">Stock Assistant</h2>
-                  <p className="text-[10px] text-slate-500">AI-powered market insights</p>
+                  <h2 className="text-sm font-semibold text-[#EBEEF4]">Stock Assistant</h2>
+                  <p className="text-[10px] text-[#5C6883]">AI-powered market insights</p>
                 </div>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/10 hover:text-white"
+                className="flex h-7 w-7 items-center justify-center rounded-[3px] text-[#5C6883] transition hover:bg-[#121B2C] hover:text-[#EBEEF4]"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -194,17 +194,17 @@ export default function ChatbotWidget() {
                   className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                    className={`max-w-[85%] rounded-[3px] px-4 py-2.5 text-sm leading-relaxed ${
                       m.role === 'user'
-                        ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/10 text-white shadow-sm shadow-cyan-500/5'
-                        : 'bg-white/[0.06] text-slate-200'
+                        ? 'bg-gradient-to-br from-[#D4A657]/25 to-[#D4A657]/10 text-[#EBEEF4] shadow-sm shadow-[#D4A657]/5'
+                        : 'bg-[#121B2C] text-[#8E9AB5]'
                     }`}
                   >
                     {m.role === 'bot' && streamingId === i && m.text === '' ? (
                       <span className="flex gap-0.5 py-1">
-                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:0ms]" />
-                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:150ms]" />
-                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:300ms]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#5C6883] [animation-delay:0ms]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#5C6883] [animation-delay:150ms]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#5C6883] [animation-delay:300ms]" />
                       </span>
                     ) : (
                       <RenderText text={m.text} />
@@ -220,7 +220,7 @@ export default function ChatbotWidget() {
                     <button
                       key={s.label}
                       onClick={() => send(s.label)}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-300"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[#1B2438] bg-[#121B2C]/60 px-3 py-1.5 text-xs font-medium text-[#8E9AB5] transition hover:border-[#D4A657]/40 hover:bg-[#D4A657]/10 hover:text-[#D4A657]"
                     >
                       <s.icon className="h-3 w-3" />
                       {s.label}
@@ -231,10 +231,10 @@ export default function ChatbotWidget() {
             </div>
 
             {/* ── Input ── */}
-            <div className="border-t border-white/[0.06] px-4 py-3">
+            <div className="border-t border-[#1B2438] px-4 py-3">
               <form
                 onSubmit={e => { e.preventDefault(); send(input); }}
-                className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-black/40 px-3 py-2 transition focus-within:border-cyan-500/40 focus-within:shadow-sm focus-within:shadow-cyan-500/5"
+                className="flex items-center gap-2 rounded-[3px] border border-[#26314A] bg-[#121B2C] px-3 py-2 transition focus-within:border-[#D4A657]/50"
               >
                 <input
                   ref={inputRef}
@@ -243,12 +243,12 @@ export default function ChatbotWidget() {
                   onChange={e => setInput(e.target.value)}
                   placeholder="Ask about stocks, IPOs, market news…"
                   disabled={loading}
-                  className="min-w-0 flex-1 bg-transparent text-sm text-white placeholder-slate-500 outline-none"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-[#EBEEF4] placeholder-[#5C6883] outline-none"
                 />
                 <button
                   type="submit"
                   disabled={loading || !input.trim()}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 text-white transition hover:from-cyan-400 hover:to-blue-500 disabled:opacity-40 disabled:hover:from-cyan-500 disabled:hover:to-blue-500"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] bg-[#D4A657] text-[#171207] transition hover:bg-[#E3B768] disabled:opacity-40 disabled:hover:bg-[#D4A657]"
                 >
                   <Send className="h-3.5 w-3.5" />
                 </button>
@@ -271,7 +271,7 @@ function RenderText({ text }: { text: string }) {
     <>
       {parts.map((p, i) =>
         p.startsWith('**') && p.endsWith('**')
-          ? <strong key={i} className="font-semibold text-white">{p.slice(2, -2)}</strong>
+          ? <strong key={i} className="font-semibold text-[#D4A657]">{p.slice(2, -2)}</strong>
           : <span key={i}>{p}</span>
       )}
     </>

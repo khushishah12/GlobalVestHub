@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter, Newsreader } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,9 +12,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const inter = Inter({
+  variable: "--nx-sans-font",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const newsreader = Newsreader({
+  variable: "--nx-serif-font",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  weight: ["400", "500", "600"],
+});
+
 export const metadata: Metadata = {
-  title: "NEXUS.AI | Interactive 3D Stock Market Dashboard",
-  description: "Smarter stock decisions, powered by AI. Real-time predictions, market sentiment, and technical indicators visualized in cinematic 3D.",
+  title: "NEXUS.AI | AI-Powered Stock Market Terminal",
+  description: "Smarter stock decisions, powered by AI. Live market data, predictive models, real-time news sentiment and pro-grade technicals in one professional terminal.",
 };
 
 export default function RootLayout({
@@ -23,7 +36,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${newsreader.variable}`}
+    >
       <body className="antialiased">{children}</body>
     </html>
   );

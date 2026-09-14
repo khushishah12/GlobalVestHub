@@ -29,7 +29,7 @@ async function fetchNewsApi(query: string): Promise<any[]> {
 
 async function fetchGdelt(query: string): Promise<any[]> {
   try {
-    const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(query)}&mode=ArtList&format=json&maxrecords=10&sort=datedesc&lang:English`;
+    const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(query)}&mode=ArtList&format=json&maxrecords=10&sort=datedesc&lang=English`;
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) return [];
     const data = await res.json();
@@ -71,9 +71,12 @@ async function fetchRss(query: string): Promise<any[]> {
           const titleMatch = item.match(/<title>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/title>/);
           const title = (titleMatch?.[1] || titleMatch?.[2] || '').trim();
           if (!title) continue;
-          const descRaw = item.match(/<description>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/description>/)?.[1] || item.match(/<description>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/description>/)?.[2] || '';
-          const link = item.match(/<link>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/link>/)?.[1] || item.match(/<link>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/link>/)?.[2] || '';
-          const pubDate = item.match(/<pubDate>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/pubDate>/)?.[1] || item.match(/<pubDate>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/pubDate>/)?.[2] || '';
+          const descMatch = item.match(/<description>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/description>/);
+          const descRaw = (descMatch?.[1] || descMatch?.[2] || '').trim();
+          const linkMatch = item.match(/<link>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/link>/);
+          const link = (linkMatch?.[1] || linkMatch?.[2] || '').trim();
+          const dateMatch = item.match(/<pubDate>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/pubDate>/);
+          const pubDate = (dateMatch?.[1] || dateMatch?.[2] || '').trim();
 
           const desc = descRaw.replace(/<[^>]+>/g, '').slice(0, 300);
 

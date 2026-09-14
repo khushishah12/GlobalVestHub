@@ -4,22 +4,25 @@ interface GlassCardProps {
   children: React.ReactNode;
   className?: string;
   accent?: 'neutral' | 'bullish' | 'bearish';
+  id?: string;
 }
 
 const accentBorder = {
-  neutral: 'border-cyan-500/20',
-  bullish: 'border-emerald-500/25',
-  bearish: 'border-rose-500/25',
+  neutral: 'border-[#D4A657]/20',
+  bullish: 'border-[#39B58C]/25',
+  bearish: 'border-[#DD6455]/25',
 };
 
 export default function GlassCard({
   children,
   className = '',
   accent = 'neutral',
+  id,
 }: GlassCardProps) {
   return (
     <div
-      className={`rounded-xl border bg-white/[0.03] p-5 backdrop-blur-md ${accentBorder[accent]} ${className}`}
+      id={id}
+      className={`rounded-[4px] border bg-[#121B2C]/80 p-5 ${accentBorder[accent]} ${className}`}
     >
       {children}
     </div>

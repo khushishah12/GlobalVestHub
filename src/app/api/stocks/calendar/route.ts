@@ -4,43 +4,6 @@ import { runSql } from '@/lib/run-sql';
 
 export const dynamic = 'force-dynamic';
 
-const QUARTER_MAP = [
-  { quarter: 'Q1', months: [4, 5, 6], reportMonths: [7, 8] },
-  { quarter: 'Q2', months: [7, 8, 9], reportMonths: [10, 11] },
-  { quarter: 'Q3', months: [10, 11, 12], reportMonths: [1, 2] },
-  { quarter: 'Q4', months: [1, 2, 3], reportMonths: [4, 5] },
-];
-
-function findQuarter(date: Date): { quarter: string; fy: number } {
-  const m = date.getMonth() + 1;
-  const y = date.getFullYear();
-  for (const q of QUARTER_MAP) {
-    if (m >= q.months[0] && m <= q.months[2]) {
-      const fy = m >= 4 ? y + 1 : y;
-      return { quarter: q.quarter, fy };
-    }
-  }
-  return { quarter: 'Q1', fy: y };
-}
-
-function nextReportQuarter(): { quarter: string; fy: number; start: Date; end: Date } {
-  const now = new Date();
-  const m = now.getMonth() + 1;
-  const y = now.getFullYear();
-  for (const q of QUARTER_MAP) {
-    const reportStart = q.reportMonths[0];
-    const reportEnd = q.reportMonths[1];
-    if (m <= reportEnd) {
-      const fy = q.months[0] >= 4 ? y + 1 : y;
-      const start = new Date(y, reportStart - 1, 1);
-      const end = new Date(y, reportEnd, 0);
-      return { quarter: q.quarter, fy, start, end };
-    }
-  }
-  const first = QUARTER_MAP[0];
-  return { quarter: first.quarter, fy: y + 1, start: new Date(y + 1, 6, 1), end: new Date(y + 1, 7, 31) };
-}
-
 function randomDate(start: Date, end: Date): string {
   const d = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
   return d.toISOString().split('T')[0];
@@ -103,27 +66,45 @@ const FALLBACK_STOCKS: { symbol: string; company_name: string; exchange: string;
 const SAMPLE_EVENT_TYPES = ['quarterly_results', 'earnings', 'guidance', 'dividend'];
 
 function generateEvents(): any[] {
-  const nq = nextReportQuarter();
+  const now = new Date();
+  const curYear = now.getFullYear();
+  const curMonth = now.getMonth() + 1;
+  const fyStartYear = curMonth >= 4 ? curYear : curYear - 1;
+  const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+  const fyQuarters = quarters.map((q, i) => {
+    const startMonth = 4 + i * 3;
+    const qStart = new Date(fyStartYear, startMonth - 1, 1);
+    const qEnd = new Date(fyStartYear, startMonth + 2, 0);
+    const reportStartMonth = startMonth + 3;
+    const reportStart = new Date(fyStartYear, reportStartMonth - 1, 1);
+    const reportEnd = new Date(fyStartYear, reportStartMonth + 1, 0);
+    return { quarter: q, fy: fyStartYear + 1, qStart, qEnd, reportStart, reportEnd };
+  });
+
   const events: any[] = [];
-  for (let i = 0; i < FALLBACK_STOCKS.length; i++) {
-    const stock = FALLBACK_STOCKS[i];
-    const eventDate = randomDate(nq.start, nq.end);
-    const eventType = SAMPLE_EVENT_TYPES[Math.floor(Math.random() * SAMPLE_EVENT_TYPES.length)];
-    const eventTime = ['before_open', 'after_close', 'not_specified'][Math.floor(Math.random() * 3)];
-    events.push({
-      id: i + 1,
-      symbol: stock.symbol,
-      company_name: stock.company_name,
-      exchange: stock.exchange,
-      event_date: eventDate,
-      event_time: eventTime,
-      event_type: eventType,
-      sector: stock.sector,
-      quarter: nq.quarter,
-      fiscal_year: nq.fy,
-      description: `${nq.quarter} FY${nq.fy} ${eventType === 'quarterly_results' ? 'Results' : eventType === 'dividend' ? 'Dividend' : eventType === 'guidance' ? 'Guidance' : 'Earnings'} - ${stock.company_name}`,
-      source: 'system',
-    });
+  let id = 1;
+  for (let qi = 0; qi < fyQuarters.length; qi++) {
+    const q = fyQuarters[qi];
+    for (let si = 0; si < FALLBACK_STOCKS.length; si++) {
+      const stock = FALLBACK_STOCKS[si];
+      const eventDate = randomDate(q.reportStart, q.reportEnd);
+      const eventType = SAMPLE_EVENT_TYPES[Math.floor(Math.random() * SAMPLE_EVENT_TYPES.length)];
+      const eventTime = ['before_open', 'after_close', 'not_specified'][Math.floor(Math.random() * 3)];
+      events.push({
+        id: id++,
+        symbol: stock.symbol,
+        company_name: stock.company_name,
+        exchange: stock.exchange,
+        event_date: eventDate,
+        event_time: eventTime,
+        event_type: eventType,
+        sector: stock.sector,
+        quarter: q.quarter,
+        fiscal_year: q.fy,
+        description: `${q.quarter} FY${q.fy} ${eventType === 'quarterly_results' ? 'Results' : eventType === 'dividend' ? 'Dividend' : eventType === 'guidance' ? 'Guidance' : 'Earnings'} - ${stock.company_name}`,
+        source: 'system',
+      });
+    }
   }
   events.sort((a, b) => a.event_date.localeCompare(b.event_date));
   return events;

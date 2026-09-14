@@ -816,6 +816,19 @@ export default function CandlestickChart({
     startAnimating();
   }, []);
 
+  /* ---- Native wheel listener (non-passive) so the page never
+     scrolls while zooming the chart ---- */
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      handleWheel(e as unknown as React.WheelEvent);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [handleWheel]);
+
   /* ---- Mouse down ---- */
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
@@ -1269,7 +1282,6 @@ export default function CandlestickChart({
       <div
         ref={containerRef}
         className="h-full w-full cursor-grab active:cursor-grabbing select-none"
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

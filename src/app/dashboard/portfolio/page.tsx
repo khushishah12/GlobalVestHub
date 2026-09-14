@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import {
   Plus, Search, Pencil, Trash2, X, Loader2, BadgeDollarSign,
   IndianRupee, TrendingUp, TrendingDown, Wallet,
-  PieChart, ArrowUpRight, ArrowDownRight,
+  PieChart, ArrowUpRight, ArrowDownRight, Briefcase,
 } from 'lucide-react';
 import PageTransition from '../../../components/dashboard/PageTransition';
 import StockSearchInput from '../../../components/dashboard/StockSearchInput';
@@ -57,7 +58,7 @@ function fmt(n: number): string {
 }
 
 function fmtCurrency(n: number): string {
-  return n >= 0 ? `₹${fmt(n)}` : `-₹${fmt(Math.abs(n))}`;
+  return n >= 0 ? `\u20B9${fmt(n)}` : `-\u20B9${fmt(Math.abs(n))}`;
 }
 
 function fmtPct(n: number): string {
@@ -130,7 +131,7 @@ function Modal({ open, onClose, onSubmit, formData, setFormData, editing, loadin
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">Buy Price (₹) *</label>
+              <label className="mb-1.5 block text-xs font-medium text-slate-400">Buy Price (\u20B9) *</label>
               <input
                 type="number"
                 value={formData.buy_price}
@@ -265,7 +266,7 @@ function SellModal({ open, holding, onClose, onSell, loading }: {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-400">Sell Price (₹) *</label>
+            <label className="mb-1.5 block text-xs font-medium text-slate-400">Sell Price (\u20B9) *</label>
             <input
               type="number"
               value={sellPrice}
@@ -328,26 +329,25 @@ function SellModal({ open, holding, onClose, onSell, loading }: {
 /*  Summary Card                                                       */
 /* ------------------------------------------------------------------ */
 
-function SummaryCard({ title, value, sub, icon: Icon, color, loading }: {
-  title: string; value: string; sub?: string; icon: any; color: string; loading?: boolean;
+function SummaryCard({ title, value, sub, icon: Icon, color, index = 0 }: {
+  title: string; value: string; sub?: string; icon: any; color: string; index?: number;
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition hover:bg-white/[0.04]">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-500">{title}</span>
-        <div className={`rounded-lg p-1.5 ${color}`}>
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
+      className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 transition hover:bg-white/[0.04] hover:border-white/[0.1]"
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500">{title}</span>
+        <div className={`rounded-lg p-2 ${color}`}>
           <Icon className="h-3.5 w-3.5" />
         </div>
       </div>
-      {loading ? (
-        <div className="h-6 w-24 animate-pulse rounded bg-white/[0.06]" />
-      ) : (
-        <>
-          <p className="text-lg font-bold text-white">{value}</p>
-          {sub && <p className="mt-0.5 text-xs text-slate-500">{sub}</p>}
-        </>
-      )}
-    </div>
+      <p className="text-xl font-bold text-white">{value}</p>
+      {sub && <p className="mt-1 text-[11px] text-slate-500">{sub}</p>}
+    </motion.div>
   );
 }
 
@@ -502,192 +502,232 @@ export default function PortfolioPage() {
 
   return (
     <PageTransition>
-      {/* ── Header ── */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <p className="text-[10px] font-medium uppercase tracking-widest text-slate-500">Portfolio</p>
-          <h1 className="text-xl font-bold text-white">My Holdings</h1>
-        </div>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition hover:from-cyan-400 hover:to-blue-500"
-        >
-          <Plus className="h-4 w-4" />
-          Add Stock
-        </button>
-      </div>
+      <div className="flex justify-center p-[10px] min-h-screen bg-[#070912]">
+        <div style={{ width: '90%', maxWidth: '1400px' }}>
 
-      {/* ── Summary cards ── */}
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <SummaryCard
-          title="Total Invested"
-          value={fmtCurrency(totals.invested)}
-          icon={Wallet}
-          color="bg-blue-500/15 text-blue-400"
-          loading={loading}
-        />
-        <SummaryCard
-          title="Current Value"
-          value={fmtCurrency(totals.currentValue)}
-          sub={`${openHoldings.length} open · ${soldHoldings.length} sold`}
-          icon={PieChart}
-          color="bg-violet-500/15 text-violet-400"
-          loading={loading}
-        />
-        <SummaryCard
-          title="Profit / Loss"
-          value={fmtCurrency(totals.pl)}
-          sub={`Realized ${fmtCurrency(realizedPl)} · Unrealized ${fmtCurrency(openPl)}`}
-          icon={totals.pl >= 0 ? TrendingUp : TrendingDown}
-          color={totals.pl >= 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'}
-          loading={loading}
-        />
-        <SummaryCard
-          title="Overall Return"
-          value={fmtPct(overallPlPct)}
-          sub={`₹${fmt(totals.pl)} total`}
-          icon={IndianRupee}
-          color={overallPlPct >= 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'}
-          loading={loading}
-        />
-      </div>
-
-      {/* ── Search ── */}
-      <div className="mb-4">
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-          <input
-            type="text"
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Filter by symbol, status..."
-            className="w-full rounded-xl border border-white/[0.08] bg-black/40 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 outline-none transition focus:border-cyan-500/30"
-          />
-        </div>
-      </div>
-
-      {/* ── Table ── */}
-      <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-white/[0.06] bg-white/[0.02] text-[10px] font-medium uppercase tracking-wider text-slate-500">
-              <th className="px-4 py-3">Symbol</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Qty</th>
-              <th className="px-4 py-3">Buy Price</th>
-              <th className="px-4 py-3">Buy Date</th>
-              <th className="px-4 py-3">Sell Price</th>
-              <th className="px-4 py-3">Invested</th>
-              <th className="px-4 py-3">Value</th>
-              <th className="px-4 py-3">P/L</th>
-              <th className="px-4 py-3">P/L %</th>
-              <th className="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={11} className="px-4 py-16 text-center text-slate-500">
-                  <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin text-cyan-400" />
-                  Loading holdings...
-                </td>
-              </tr>
-            ) : paged.length === 0 ? (
-              <tr>
-                <td colSpan={11} className="px-4 py-16 text-center text-slate-500">
-                  {search ? 'No holdings match your search.' : 'No holdings yet. Click "Add Stock" to get started.'}
-                </td>
-              </tr>
-            ) : paged.map(h => {
-              const isSold = h.status === 'sold';
-              return (
-              <tr key={h.id} className={`border-b border-white/[0.04] transition hover:bg-white/[0.02] ${isSold ? 'opacity-60' : ''}`}>
-                <td className="px-4 py-3">
-                  <span className="font-semibold text-white">{h.stock_symbol}</span>
-                  <span className="ml-2 text-[10px] text-slate-600">{h.exchange}</span>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                    isSold
-                      ? 'bg-slate-500/15 text-slate-400'
-                      : 'bg-emerald-500/15 text-emerald-400'
-                  }`}>
-                    {isSold ? 'Sold' : 'Open'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-slate-300">{fmt(h.quantity)}</td>
-                <td className="px-4 py-3 text-slate-300">{fmtCurrency(h.buy_price)}</td>
-                <td className="px-4 py-3 text-slate-400">{h.buy_date}</td>
-                <td className="px-4 py-3 text-slate-300">
-                  {h.sell_price ? fmtCurrency(h.sell_price) : '—'}
-                  {h.sell_date && <span className="ml-1 text-[10px] text-slate-600">{h.sell_date}</span>}
-                </td>
-                <td className="px-4 py-3 text-slate-300">{fmtCurrency(h.invested_amount)}</td>
-                <td className="px-4 py-3 text-slate-300">{fmtCurrency(h.current_value)}</td>
-                <td className={`px-4 py-3 font-medium ${h.profit_loss >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  <span className="flex items-center gap-1">
-                    {h.profit_loss >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                    {fmtCurrency(h.profit_loss)}
-                  </span>
-                </td>
-                <td className={`px-4 py-3 font-medium ${h.profit_loss_percentage >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {fmtPct(h.profit_loss_percentage)}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    {!isSold && (
-                      <button
-                        onClick={() => openSell(h)}
-                        className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/[0.06] hover:text-amber-400"
-                        title="Sell"
-                      >
-                        <BadgeDollarSign className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => openEdit(h)}
-                      className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/[0.06] hover:text-cyan-400"
-                      title="Edit"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteId(h.id)}
-                      className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/[0.06] hover:text-rose-400"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* ── Pagination ── */}
-      {totalPages > 1 && !loading && (
-        <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
-          <span>Showing {Math.min(filtered.length, PER_PAGE)} of {filtered.length}</span>
-          <div className="flex gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+          {/* ═══════════════════════════════════════════════════════════ */}
+          {/*  HERO HEADER STRIP                                          */}
+          {/* ═══════════════════════════════════════════════════════════ */}
+          <header className="relative mb-[50px] w-full bg-gradient-to-r from-white/[0.04] via-white/[0.02] to-transparent border-y border-white/[0.05]">
+            <div className="mx-auto max-w-[1400px] px-4 md:px-8 py-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <div className="flex items-center gap-4">
+                <div className="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                  <Briefcase className="w-5 h-5 text-emerald-300" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-white md:text-3xl">Portfolio</h1>
+                  <p className="text-sm text-slate-400">Track your stock holdings, monitor P&L and manage positions.</p>
+                </div>
+              </div>
               <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`min-w-[28px] rounded-lg px-2 py-1 text-center transition ${
-                  p === safePage
-                    ? 'bg-cyan-500/15 text-cyan-300'
-                    : 'text-slate-500 hover:bg-white/[0.06] hover:text-white'
-                }`}
+                onClick={openAdd}
+                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition hover:from-cyan-400 hover:to-blue-500"
               >
-                {p}
+                <Plus className="h-4 w-4" />
+                Add Stock
               </button>
-            ))}
+            </div>
+          </header>
+
+          {/* ═══════════════════════════════════════════════════════════ */}
+          {/*  NOTEBOOK CONTAINER                                         */}
+          {/* ═══════════════════════════════════════════════════════════ */}
+          <div className="w-full bg-[#0a0c14] border border-white/[0.05] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+
+            {/* ──── Summary cards ──── */}
+            <div className="px-8 pt-8">
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <SummaryCard
+                  title="Total Invested"
+                  value={loading ? '—' : fmtCurrency(totals.invested)}
+                  icon={Wallet}
+                  color="bg-blue-500/15 text-blue-400"
+                  index={0}
+                />
+                <SummaryCard
+                  title="Current Value"
+                  value={loading ? '—' : fmtCurrency(totals.currentValue)}
+                  sub={loading ? '' : `${openHoldings.length} open \u00B7 ${soldHoldings.length} sold`}
+                  icon={PieChart}
+                  color="bg-violet-500/15 text-violet-400"
+                  index={1}
+                />
+                <SummaryCard
+                  title="Profit / Loss"
+                  value={loading ? '—' : fmtCurrency(totals.pl)}
+                  sub={loading ? '' : `Realized ${fmtCurrency(realizedPl)} \u00B7 Unrealized ${fmtCurrency(openPl)}`}
+                  icon={totals.pl >= 0 ? TrendingUp : TrendingDown}
+                  color={totals.pl >= 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'}
+                  index={2}
+                />
+                <SummaryCard
+                  title="Overall Return"
+                  value={loading ? '—' : fmtPct(overallPlPct)}
+                  sub={loading ? '' : `\u20B9${fmt(totals.pl)} total`}
+                  icon={IndianRupee}
+                  color={overallPlPct >= 0 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'}
+                  index={3}
+                />
+              </div>
+            </div>
+
+            {/* ──── Search bar ──── */}
+            <div className="h-8 w-full" />
+            <div className="px-8 flex justify-center">
+              <div className="w-full max-w-xl">
+                <div className="flex items-center gap-3 px-5 py-3.5 border-2 rounded-xl transition-all duration-300 bg-white/[0.04] border-cyan-500/20 hover:border-cyan-500/40 hover:bg-white/[0.06] hover:shadow-[0_0_16px_rgba(0,229,255,0.06)] focus-within:border-cyan-500/50 focus-within:bg-white/[0.08] focus-within:shadow-[0_0_20px_rgba(0,229,255,0.12)]">
+                  <Search className="w-5 h-5 shrink-0 text-cyan-400/60" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={e => { setSearch(e.target.value); setPage(1); }}
+                    placeholder="Search holdings by symbol, status, exchange..."
+                    className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 outline-none tracking-wide"
+                  />
+                  {search && (
+                    <button onClick={() => { setSearch(''); setPage(1); }} className="p-1 rounded-full hover:bg-white/[0.08] transition">
+                      <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="h-8 w-full" />
+
+            {/* ──── Holdings table ──── */}
+            <div className="px-8 pb-8">
+              <div className="overflow-x-auto rounded-2xl border border-white/[0.06]">
+                <table className="w-full text-left text-sm leading-loose">
+                  <thead>
+                    <tr className="border-b border-white/[0.06] bg-white/[0.02] text-[10px] font-medium uppercase tracking-wider text-slate-500">
+                      <th className="px-5 py-4">Symbol</th>
+                      <th className="px-5 py-4">Status</th>
+                      <th className="px-5 py-4">Qty</th>
+                      <th className="px-5 py-4">Buy Price</th>
+                      <th className="px-5 py-4">Buy Date</th>
+                      <th className="px-5 py-4">Sell Price</th>
+                      <th className="px-5 py-4">Invested</th>
+                      <th className="px-5 py-4">Current Value</th>
+                      <th className="px-5 py-4">P/L</th>
+                      <th className="px-5 py-4">P/L %</th>
+                      <th className="px-5 py-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={11} className="px-5 py-20 text-center text-slate-500">
+                          <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin text-cyan-400" />
+                          Loading holdings...
+                        </td>
+                      </tr>
+                    ) : paged.length === 0 ? (
+                      <tr>
+                        <td colSpan={11} className="px-5 py-20 text-center text-slate-500">
+                          {search ? 'No holdings match your search.' : 'No holdings yet. Click "Add Stock" to get started.'}
+                        </td>
+                      </tr>
+                    ) : paged.map((h, i) => {
+                      const isSold = h.status === 'sold';
+                      return (
+                      <motion.tr
+                        key={h.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] }}
+                        className={`border-b border-white/[0.04] transition hover:bg-white/[0.02] ${isSold ? 'opacity-60' : ''}`}
+                      >
+                        <td className="px-5 py-4">
+                          <span className="font-semibold text-white">{h.stock_symbol}</span>
+                          <span className="ml-2 text-[10px] text-slate-600">{h.exchange}</span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
+                            isSold
+                              ? 'bg-slate-500/15 text-slate-400'
+                              : 'bg-emerald-500/15 text-emerald-400'
+                          }`}>
+                            {isSold ? 'Sold' : 'Open'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-slate-300">{fmt(h.quantity)}</td>
+                        <td className="px-5 py-4 text-slate-300">{fmtCurrency(h.buy_price)}</td>
+                        <td className="px-5 py-4 text-slate-400">{h.buy_date}</td>
+                        <td className="px-5 py-4 text-slate-300">
+                          {h.sell_price ? fmtCurrency(h.sell_price) : '\u2014'}
+                          {h.sell_date && <span className="ml-1 text-[10px] text-slate-600">{h.sell_date}</span>}
+                        </td>
+                        <td className="px-5 py-4 text-slate-300">{fmtCurrency(h.invested_amount)}</td>
+                        <td className="px-5 py-4 text-slate-300">{fmtCurrency(h.current_value)}</td>
+                        <td className={`px-5 py-4 font-medium ${h.profit_loss >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          <span className="flex items-center gap-1">
+                            {h.profit_loss >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                            {fmtCurrency(h.profit_loss)}
+                          </span>
+                        </td>
+                        <td className={`px-5 py-4 font-medium ${h.profit_loss_percentage >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {fmtPct(h.profit_loss_percentage)}
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            {!isSold && (
+                              <button
+                                onClick={() => openSell(h)}
+                                className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/[0.06] hover:text-amber-400"
+                                title="Sell"
+                              >
+                                <BadgeDollarSign className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => openEdit(h)}
+                              className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/[0.06] hover:text-cyan-400"
+                              title="Edit"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteId(h.id)}
+                              className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/[0.06] hover:text-rose-400"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* ── Pagination ── */}
+              {totalPages > 1 && !loading && (
+                <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
+                  <span>Showing {Math.min(filtered.length, PER_PAGE)} of {filtered.length}</span>
+                  <div className="flex gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        className={`min-w-[30px] rounded-lg px-2.5 py-1.5 text-center text-xs transition ${
+                          p === safePage
+                            ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/20'
+                            : 'text-slate-500 hover:bg-white/[0.06] hover:text-white'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
-      )}
+      </div>
 
       {/* ── Add/Edit Modal ── */}
       <Modal

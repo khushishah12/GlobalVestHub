@@ -1,35 +1,75 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import SignupForm from '../../components/auth/SignupForm';
 import Link from 'next/link';
 
+function SignupFormContainer() {
+  return <SignupForm />;
+}
+
 export default function SignupPage() {
   return (
-    <div className="relative min-h-screen flex flex-col justify-center items-center px-4 bg-[#030308] text-white">
-      {/* Background decorations matching the dashboard */}
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(0,229,255,0.08),transparent_50%),radial-gradient(ellipse_at_bottom_right,rgba(255,51,102,0.06),transparent_50%)]" />
-      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-      
-      <div className="w-full max-w-md z-10">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-4">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_#00ff88] animate-pulse" />
-            <span className="text-xl font-bold tracking-widest text-white">
-              NEXUS<span className="text-emerald-400">.AI</span>
-            </span>
-          </Link>
-          <h1 className="text-2xl font-bold tracking-tight text-white mt-2">Create your account</h1>
-          <p className="text-sm text-slate-400 mt-1.5">
-            Join NEXUS.AI and unlock the full 3D market dashboard.
+    <div className="nx-theme flex min-h-screen flex-col overflow-x-hidden">
+      {/* Ambient background */}
+      <div
+        className="pointer-events-none fixed inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse at top left, rgba(212,166,87,0.05), transparent 55%), radial-gradient(ellipse at bottom right, rgba(57,181,140,0.05), transparent 55%)',
+        }}
+      />
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#D4A657]/60 to-transparent" />
+
+      {/* Header */}
+      <header className="nx-header relative">
+        <div className="nx-wrap">
+          <nav className="nx-nav">
+            <Link href="/" className="nx-logo">
+              NEXUS<span className="tick">.AI</span>
+            </Link>
+            <div className="nx-nav-actions">
+              <Link href="/" className="nx-btn nx-btn-ghost">
+                Home
+              </Link>
+              <Link href="/login" className="nx-btn nx-btn-gold">
+                Log in
+              </Link>
+            </div>
+          </nav>
+        </div>
+      </header>
+
+      {/* Auth card */}
+      <main className="relative flex flex-1 items-center justify-center px-5 py-16">
+        <div className="w-full max-w-md">
+          <div className="nx-panel">
+            <div className="h-[2px] bg-gradient-to-r from-transparent via-[#D4A657]/70 to-transparent" />
+            <div className="nx-auth-card">
+              <h1 className="nx-auth-title">
+                Create your <em>account</em>
+              </h1>
+              <p className="nx-auth-sub">
+                Join NEXUS.AI and unlock the full AI market terminal — live data, pattern detection and news sentiment.
+              </p>
+              <Suspense
+                fallback={
+                  <div className="flex h-44 items-center justify-center">
+                    <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#D4A657] border-t-transparent" />
+                  </div>
+                }
+              >
+                <SignupFormContainer />
+              </Suspense>
+            </div>
+          </div>
+
+          <p className="nx-auth-note mt-6">
+            <span className="nx-dot" />
+            No card required · Free plan covers a 10-ticker watchlist
           </p>
         </div>
-
-        <div className="relative rounded-2xl border border-white/10 bg-slate-950/70 p-6 md:p-8 shadow-2xl backdrop-blur-xl">
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent rounded-t-2xl" />
-          <SignupForm />
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  TrendingUp, TrendingDown, Minus, BarChart3, Zap,
-  Loader2, Activity, Sparkles, ChevronRight, RefreshCw,
-  Search, Building2, Download, AlertTriangle, Target,
-  TrendingUp as TrendUp, Shield, Award, PieChart,
-  Filter, X, ArrowUpDown, ChevronDown, ChevronUp,
-  Download as ExportIcon, Star, Clock, DollarSign,
+  TrendingUp, TrendingDown, BarChart3, Zap,
+  Loader2, Activity, Sparkles, RefreshCw,
+  Search, Download, AlertTriangle, Target,
+  TrendingUp as TrendUp, Shield, Award,
+  Filter, ChevronUp, ChevronDown,
+  Clock, X,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import PageTransition from '@/components/dashboard/PageTransition';
 
 /* ── Types ── */
 
@@ -28,12 +30,14 @@ interface Recommendation {
 
 /* ── Config ── */
 
-const REC_LABELS: Record<string, { label: string; color: string; bg: string; border: string; icon: any }> = {
-  'Strong Buy': { label: 'Strong Buy', color: 'text-emerald-300', bg: 'bg-emerald-500/12', border: 'border-emerald-500/30', icon: TrendingUp },
-  'Buy': { label: 'Buy', color: 'text-blue-300', bg: 'bg-blue-500/12', border: 'border-blue-500/30', icon: ArrowUpDown },
-  'Watchlist': { label: 'Watchlist', color: 'text-yellow-300', bg: 'bg-yellow-500/12', border: 'border-yellow-500/30', icon: Clock },
-  'Avoid': { label: 'Avoid', color: 'text-rose-300', bg: 'bg-rose-500/12', border: 'border-rose-500/30', icon: TrendingDown },
+const REC_LABELS: Record<string, { label: string; color: string; bg: string; border: string; icon: LucideIcon }> = {
+  'Strong Buy': { label: 'Strong Buy', color: 'text-[#39B58C]', bg: 'bg-[#39B58C]/10', border: 'border-[#39B58C]/25', icon: TrendingUp },
+  'Buy': { label: 'Buy', color: 'text-[#D4A657]', bg: 'bg-[#D4A657]/10', border: 'border-[#D4A657]/25', icon: Activity },
+  'Watchlist': { label: 'Watchlist', color: 'text-[#8E9AB5]', bg: 'bg-[#8E9AB5]/10', border: 'border-[#26314A]', icon: Clock },
+  'Avoid': { label: 'Avoid', color: 'text-[#DD6455]', bg: 'bg-[#DD6455]/10', border: 'border-[#DD6455]/25', icon: TrendingDown },
 };
+
+const SERIF = { fontFamily: 'var(--nx-serif-font), Georgia, serif' };
 
 /* ── Helpers ── */
 
@@ -45,14 +49,7 @@ function fmtReturn(n: number): string {
   return `${n >= 0 ? '+' : ''}${fmt(n)}%`;
 }
 
-function fmtMarketCap(n: number): string {
-  if (n >= 1e12) return `₹${fmt(n / 1e12)}T`;
-  if (n >= 1e9) return `₹${fmt(n / 1e9)}B`;
-  if (n >= 1e7) return `₹${fmt(n / 1e7)}Cr`;
-  return `₹${fmt(n)}`;
-}
-
-function marketStatus(): 'open' | 'closed' | 'pre' {
+function marketStatus(): 'open' | 'closed' {
   const now = new Date();
   const h = now.getHours(), m = now.getMinutes(), d = now.getDay();
   if (d === 0 || d === 6) return 'closed';
@@ -65,21 +62,23 @@ function getSectors(recos: Recommendation[]): string[] {
   return [...new Set(recos.map(r => r.sector))].filter(Boolean).sort();
 }
 
+function clampConfidence(n: number | undefined | null): number {
+  if (n == null || !isFinite(n)) return 0;
+  return Math.max(0, Math.min(100, n));
+}
+
 /* ── Animated Counter ── */
 
 function AnimatedNumber({ value, suffix = '' }: { value: number; suffix?: string }) {
   const [display, setDisplay] = useState(0);
   useEffect(() => {
-    let start = 0;
+    const start = 0;
     const dur = 1200;
     const step = (value - start) / (dur / 16);
     let cur = start;
     const timer = setInterval(() => {
       cur += step;
-      if ((step > 0 && cur >= value) || (step < 0 && cur <= value)) {
-        cur = value;
-        clearInterval(timer);
-      }
+      if ((step > 0 && cur >= value) || (step < 0 && cur <= value)) { cur = value; clearInterval(timer); }
       setDisplay(Math.round(cur));
     }, 16);
     return () => clearInterval(timer);
@@ -87,95 +86,48 @@ function AnimatedNumber({ value, suffix = '' }: { value: number; suffix?: string
   return <>{display}{suffix}</>;
 }
 
-/* ── Summary Card ── */
+/* ── Stat Card ── */
 
-function SummaryCard({ title, value, sub, icon: Icon, gradient, loading }: {
-  title: string; value: any; sub?: string; icon: any; gradient: string; loading?: boolean;
+function StatCard({ icon, label, children, meta, accent }: {
+  icon: React.ReactNode; label: string; children: React.ReactNode; meta?: React.ReactNode; accent: 'gold' | 'teal';
 }) {
+  const chip = accent === 'teal' ? 'bg-[#39B58C]/15 text-[#39B58C]' : 'bg-[#D4A657]/10 text-[#D4A657]';
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 transition-all duration-300 hover:border-white/[0.12] hover:bg-white/[0.04] hover:shadow-lg hover:shadow-black/20">
-      <div className={`absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-10 transition-all duration-500 group-hover:scale-150 ${gradient}`} />
-      <div className="relative z-10">
-        <div className="mb-3 flex items-center justify-between">
-          <span className="text-[10px] font-medium uppercase tracking-widest text-slate-500">{title}</span>
-          <div className={`rounded-xl p-2 ${gradient} bg-opacity-20`}>
-            <Icon className="h-4 w-4 text-white" />
-          </div>
-        </div>
-        {loading ? (
-          <div className="h-7 w-24 animate-pulse rounded bg-white/[0.06]" />
-        ) : (
-          <p className="text-2xl font-bold text-white tracking-tight">{value}</p>
-        )}
-        {sub && <p className="mt-1 text-[11px] text-slate-500">{sub}</p>}
+    <div className="nx-panel-card">
+      <div className="flex items-start gap-2.5 p-4 pb-0.5">
+        <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[3px] ${chip}`}>{icon}</span>
+        <p className="nx-panel-symbol">{label}</p>
       </div>
+      <div className="px-4 pb-4 pt-2">{children}</div>
+      {meta && <div className="nx-panel-card-meta">{meta}</div>}
     </div>
   );
 }
 
-/* ── Recommendation Card ── */
-
-function RecCard({ rec }: { rec: Recommendation }) {
-  const cfg = REC_LABELS[rec.recommendation] || REC_LABELS['Watchlist'];
-  const Icon = cfg.icon;
+function StatValue({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`group relative overflow-hidden rounded-2xl border ${cfg.border} ${cfg.bg} p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${rec.recommendation === 'Strong Buy' ? 'emerald' : rec.recommendation === 'Buy' ? 'blue' : rec.recommendation === 'Avoid' ? 'rose' : 'yellow'}-500/10`}>
-      <div className="mb-3 flex items-start justify-between">
-        <div>
-          <p className="text-sm font-semibold text-white">{rec.company}</p>
-          <div className="mt-0.5 flex items-center gap-2">
-            <span className="font-mono text-[10px] text-slate-500">{rec.symbol}</span>
-            <span className="rounded bg-white/[0.04] px-1.5 py-0.5 text-[9px] text-slate-600">{rec.market_cap_category}</span>
-          </div>
-        </div>
-        <div className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 ${cfg.bg} ${cfg.color}`}>
-          <Icon className="h-3 w-3" />
-          <span className="text-[10px] font-semibold">{cfg.label}</span>
-        </div>
-      </div>
-      <div className="mb-4 grid grid-cols-2 gap-3">
-        <div>
-          <p className="text-[9px] text-slate-500">Predicted Return</p>
-          <p className={`text-base font-bold ${rec.predicted_return >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {fmtReturn(rec.predicted_return)}
-          </p>
-        </div>
-        <div>
-          <p className="text-[9px] text-slate-500">Confidence</p>
-          <div className="mt-1 flex items-center gap-2">
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
-              <div className={`h-full rounded-full ${rec.confidence >= 80 ? 'bg-emerald-500' : rec.confidence >= 60 ? 'bg-yellow-500' : 'bg-rose-500'}`}
-                style={{ width: `${rec.confidence}%` }} />
-            </div>
-            <span className="font-mono text-xs text-slate-300">{rec.confidence}%</span>
-          </div>
-        </div>
-      </div>
-      <button className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] py-2 text-[10px] font-medium text-slate-300 transition hover:bg-white/[0.08] hover:text-white">
-        View Analysis
-      </button>
-    </div>
+    <p className="text-[22px] font-medium leading-tight text-[#EBEEF4] whitespace-nowrap" style={SERIF}>
+      {children}
+    </p>
   );
 }
 
 /* ── Simple Bar Chart ── */
 
-function BarChart({ data, color }: { data: { label: string; value: number }[]; color: string }) {
+function BarChart({ data }: { data: { label: string; value: number }[] }) {
   const max = Math.max(...data.map(d => Math.abs(d.value)), 1);
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       {data.map((d, i) => (
         <div key={i} className="flex items-center gap-3">
-          <span className="w-24 truncate text-[10px] text-slate-400">{d.label}</span>
+          <span className="w-20 truncate font-mono text-[11px] text-[#8E9AB5]">{d.label}</span>
           <div className="flex-1">
-            <div className="h-4 overflow-hidden rounded-full bg-white/[0.04]">
-              <div
-                className={`h-full rounded-full ${d.value >= 0 ? 'bg-emerald-500/60' : 'bg-rose-500/60'} transition-all duration-500`}
-                style={{ width: `${(Math.abs(d.value) / max) * 100}%` }}
-              />
+            <div className="h-[7px] overflow-hidden rounded-full bg-[#1B2438]">
+              <div className={`h-full rounded-full ${d.value >= 0 ? 'bg-[#39B58C]/70' : 'bg-[#DD6455]/70'} transition-all duration-500`}
+                style={{ width: `${(Math.abs(d.value) / max) * 100}%` }} />
             </div>
           </div>
-          <span className={`w-16 text-right font-mono text-[10px] ${d.value >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+          <span className={`w-20 text-right font-mono text-xs ${d.value >= 0 ? 'text-[#39B58C]' : 'text-[#DD6455]'}`}>
             {fmtReturn(d.value)}
           </span>
         </div>
@@ -199,27 +151,32 @@ export default function StockPickerPage() {
   const [selectedRec, setSelectedRec] = useState<string[]>([]);
   const [minReturn, setMinReturn] = useState(-30);
   const [showFilters, setShowFilters] = useState(false);
-  const [exporting, setExporting] = useState<'csv' | 'pdf' | null>(null);
+  const [exporting, setExporting] = useState<'csv' | null>(null);
+  const [nonce, setNonce] = useState(0);
 
   const PER_PAGE = 10;
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch('/api/stock-picker');
-      if (!res.ok) throw new Error('API error');
-      const d = await res.json();
-      setRecos(d.recommendations || []);
-    } catch {
-      setError('Failed to load recommendations');
-    }
-    setLoading(false);
-  }, []);
+  /* ---- Load recommendations ---- */
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const res = await fetch('/api/stock-picker');
+        if (!res.ok) throw new Error('API error');
+        const d = await res.json();
+        if (!cancelled) setRecos(d.recommendations || []);
+      } catch {
+        if (!cancelled) setError('Failed to load recommendations');
+      }
+      if (!cancelled) setLoading(false);
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [nonce]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
-
-  const filtered = useMemo(() => {
+  const filtered = (() => {
     let list = [...recos];
     if (search) {
       const q = search.toLowerCase();
@@ -235,7 +192,7 @@ export default function StockPickerPage() {
       return sortAsc ? aVal - bVal : bVal - aVal;
     });
     return list;
-  }, [recos, search, selectedSectors, selectedMcap, selectedRec, minReturn, sortBy, sortAsc]);
+  })();
 
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
@@ -246,27 +203,12 @@ export default function StockPickerPage() {
   const mcaps = [...new Set(recos.map(r => r.market_cap_category))].filter(Boolean);
   const recTypes = [...new Set(recos.map(r => r.recommendation))].filter(Boolean);
 
-  const summary = useMemo(() => {
-    const total = recos.length;
-    const strongBuy = recos.filter(r => r.recommendation === 'Strong Buy').length;
-    const avgReturn = total > 0 ? recos.reduce((s, r) => s + r.predicted_return, 0) / total : 0;
-    const highest = total > 0 ? Math.max(...recos.map(r => r.predicted_return)) : 0;
-    return { total, strongBuy, avgReturn, highest };
-  }, [recos]);
+  const total = recos.length;
+  const strongBuy = recos.filter(r => r.recommendation === 'Strong Buy').length;
+  const avgReturn = total > 0 ? recos.reduce((s, r) => s + r.predicted_return, 0) / total : 0;
+  const highest = total > 0 ? Math.max(...recos.map(r => r.predicted_return)) : 0;
 
   const top10 = recos.slice(0, 10);
-  const sectorData = useMemo(() => {
-    const m = new Map<string, number[]>();
-    recos.forEach(r => {
-      if (!m.has(r.sector)) m.set(r.sector, []);
-      m.get(r.sector)!.push(r.predicted_return);
-    });
-    return Array.from(m.entries()).map(([s, vals]) => ({
-      label: s,
-      value: Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100) / 100,
-      count: vals.length,
-    })).sort((a, b) => b.value - a.value);
-  }, [recos]);
 
   const exportCsv = () => {
     setExporting('csv');
@@ -280,306 +222,357 @@ export default function StockPickerPage() {
     setTimeout(() => setExporting(null), 500);
   };
 
-  const toggleSort = (field: typeof sortBy) => {
+  const toggleSort = (field: 'return' | 'confidence') => {
     if (sortBy === field) setSortAsc(!sortAsc);
     else { setSortBy(field); setSortAsc(false); }
   };
 
   return (
-    <div className="min-h-screen px-4 py-6">
-
-      {/* ═══════════ HEADER ═══════════ */}
-      <div className="mb-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/8 px-4 py-1.5 text-[10px] font-medium uppercase tracking-widest text-cyan-300">
-              <Sparkles className="h-3 w-3" />
-              AI Stock Picker
-            </div>
-            <h1 className="text-2xl font-bold text-white">Discover the best stocks selected by AI</h1>
-            <div className="mt-2 flex items-center gap-3 text-[11px] text-slate-500">
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </span>
-              <span className={`flex items-center gap-1 ${status === 'open' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${status === 'open' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
-                Market {status === 'open' ? 'Open' : 'Closed'}
-              </span>
+    <PageTransition>
+      <div className="rounded-[4px] border border-[#1B2438] bg-[#0B111C] px-4 py-8 md:px-8 lg:py-10">
+        {/* ──── HEADER ──── */}
+        <header className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-[3px] border border-[#D4A657]/30 bg-[#D4A657]/10 text-[#D4A657]">
+              <Zap className="w-5 h-5" />
+            </span>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#D4A657]/25 bg-[#D4A657]/10 px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-[#D4A657]">
+                  <Sparkles className="w-2.5 h-2.5" /> AI Powered
+                </span>
+              </div>
+              <h1 className="text-2xl md:text-3xl font-medium text-[#EBEEF4]" style={SERIF}>
+                Stock Picker
+              </h1>
+              <p className="text-sm text-[#8E9AB5]">ML-powered stock recommendations</p>
             </div>
           </div>
-          <button
-            onClick={fetchData}
-            disabled={loading}
-            className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-2.5 text-xs text-slate-300 transition hover:bg-white/[0.08] disabled:opacity-50"
+          <div className="flex items-center gap-3">
+            <span className="hidden md:flex items-center gap-2 rounded-[3px] border border-[#1B2438] bg-[#0B111C] px-3 py-2 text-xs text-[#5C6883]">
+              <span className={`relative flex h-2 w-2`}>
+                <span className={`absolute inset-0 rounded-full ${status === 'open' ? 'bg-[#39B58C] animate-ping opacity-40' : 'bg-[#5C6883]'}`} />
+                <span className={`relative w-2 h-2 rounded-full ${status === 'open' ? 'bg-[#39B58C]' : 'bg-[#5C6883]'}`} />
+              </span>
+              Market {status === 'open' ? 'Open' : 'Closed'}
+            </span>
+            <button
+              onClick={() => setNonce(n => n + 1)}
+              disabled={loading}
+              className="flex items-center gap-2 rounded-[3px] border border-[#1B2438] bg-[#0B111C] px-3.5 py-2 text-xs text-[#8E9AB5] transition hover:border-[#26314A] hover:text-[#EBEEF4] disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin text-[#D4A657]' : ''}`} /> Refresh
+            </button>
+          </div>
+        </header>
+
+        {/* ──── SUMMARY RACK ──── */}
+        <div className="mb-10 grid grid-cols-2 md:grid-cols-4 gap-5">
+          <StatCard
+            icon={<BarChart3 className="h-4 w-4" />}
+            label="Total Stocks"
+            accent="gold"
+            meta={<span className="w-full text-center text-[12px] font-medium text-[#8E9AB5]">Analyzed</span>}
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-        </div>
-      </div>
+            {loading ? <StatValue>—</StatValue> : <StatValue><AnimatedNumber value={total} /></StatValue>}
+          </StatCard>
 
-      {/* ═══════════ SUMMARY CARDS ═══════════ */}
-      <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <SummaryCard title="Total Stocks" value={loading ? '—' : <AnimatedNumber value={summary.total} />} sub="Analyzed" icon={BarChart3}
-          gradient="from-cyan-500/30 to-blue-500/30" loading={loading} />
-        <SummaryCard title="Strong Buy" value={loading ? '—' : <AnimatedNumber value={summary.strongBuy} />} sub="Recommendations" icon={TrendUp}
-          gradient="from-emerald-500/30 to-green-500/30" loading={loading} />
-        <SummaryCard title="Avg Return" value={loading ? '—' : fmtReturn(summary.avgReturn)} sub="Predicted" icon={Target}
-          gradient="from-violet-500/30 to-purple-500/30" loading={loading} />
-        <SummaryCard title="Top Return" value={loading ? '—' : fmtReturn(summary.highest)} sub="Highest predicted" icon={Award}
-          gradient="from-amber-500/30 to-orange-500/30" loading={loading} />
-      </div>
+          <StatCard
+            icon={<TrendUp className="h-4 w-4" />}
+            label="Strong Buy"
+            accent="teal"
+            meta={<span className="w-full text-center text-[12px] font-medium text-[#8E9AB5]">Recommendations</span>}
+          >
+            {loading ? <StatValue>—</StatValue> : <StatValue><AnimatedNumber value={strongBuy} /></StatValue>}
+          </StatCard>
 
-      {/* ═══════════ FILTER + TABLE ═══════════ */}
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-        <div className="relative max-w-xs flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
-          <input type="text" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Search by symbol or company..." className="w-full rounded-xl border border-white/[0.08] bg-black/40 py-2.5 pl-9 pr-3 text-xs text-white placeholder-slate-500 outline-none transition focus:border-cyan-500/30" />
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-[10px] transition ${
-              showFilters ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300' : 'border-white/[0.08] bg-white/[0.04] text-slate-400 hover:bg-white/[0.08]'
-            }`}>
-            <Filter className="h-3 w-3" /> Filters
-          </button>
-          <button onClick={exportCsv} disabled={exporting === 'csv' || !recos.length}
-            className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3.5 py-2.5 text-[10px] text-slate-400 transition hover:bg-white/[0.08] disabled:opacity-40">
-            <ExportIcon className="h-3 w-3" /> {exporting === 'csv' ? 'Exporting...' : 'CSV'}
-          </button>
-        </div>
-      </div>
-
-      {/* ── Filter Panel ── */}
-      {showFilters && (
-        <div className="mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-white">Filters</h3>
-              <button onClick={() => { setSelectedSectors([]); setSelectedMcap([]); setSelectedRec([]); setMinReturn(-30); }}
-                className="text-[10px] text-cyan-400 hover:text-cyan-300">Reset</button>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-slate-500">Sector</p>
-                <div className="max-h-32 space-y-1.5 overflow-y-auto">
-                  {sectors.map(s => (
-                    <label key={s} className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={selectedSectors.includes(s)}
-                        onChange={() => setSelectedSectors(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])}
-                        className="h-3 w-3 rounded border-white/[0.12] bg-white/[0.04] accent-cyan-500" />
-                      <span className="text-[11px] text-slate-400">{s}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-slate-500">Market Cap</p>
-                <div className="space-y-1.5">
-                  {mcaps.map(s => (
-                    <label key={s} className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={selectedMcap.includes(s)}
-                        onChange={() => setSelectedMcap(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])}
-                        className="h-3 w-3 rounded border-white/[0.12] bg-white/[0.04] accent-cyan-500" />
-                      <span className="text-[11px] text-slate-400">{s}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-slate-500">Recommendation</p>
-                <div className="space-y-1.5">
-                  {recTypes.map(s => (
-                    <label key={s} className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={selectedRec.includes(s)}
-                        onChange={() => setSelectedRec(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])}
-                        className="h-3 w-3 rounded border-white/[0.12] bg-white/[0.04] accent-cyan-500" />
-                      <span className="text-[11px] text-slate-400">{s}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-slate-500">Min Return: {minReturn}%</p>
-                <input type="range" min={-30} max={40} value={minReturn} onChange={e => setMinReturn(Number(e.target.value))}
-                  className="w-full accent-cyan-500" />
-                <div className="mt-1 flex justify-between text-[9px] text-slate-600">
-                  <span>-30%</span><span>+40%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ═══════════ RANKING TABLE ═══════════ */}
-      <div className="mb-8 overflow-hidden rounded-2xl border border-white/[0.06]">
-        <div className="border-b border-white/[0.06] bg-white/[0.02] px-5 py-3">
-          <h2 className="text-sm font-semibold text-white">Stock Rankings</h2>
-        </div>
-        {loading ? (
-          <div className="px-5 py-16 text-center">
-            <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin text-cyan-400" />
-            <p className="text-xs text-slate-500">Analyzing stocks with AI model...</p>
-          </div>
-        ) : error ? (
-          <div className="px-5 py-16 text-center">
-            <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-rose-400" />
-            <p className="text-sm text-rose-300">{error}</p>
-            <button onClick={fetchData} className="mt-3 rounded-xl bg-white/[0.06] px-4 py-2 text-xs text-slate-300 hover:bg-white/[0.1]">Retry</button>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-white/[0.04] text-[9px] uppercase tracking-wider text-slate-500">
-                    <th className="px-4 py-3 w-10">Rank</th>
-                    <th className="px-4 py-3">Symbol</th>
-                    <th className="px-4 py-3">Company</th>
-                    <th className="px-4 py-3 cursor-pointer select-none" onClick={() => toggleSort('return')}>
-                      <span className="flex items-center gap-1">Return {sortBy === 'return' ? (sortAsc ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : ''}</span>
-                    </th>
-                    <th className="px-4 py-3 cursor-pointer select-none" onClick={() => toggleSort('confidence')}>
-                      <span className="flex items-center gap-1">Confidence {sortBy === 'confidence' ? (sortAsc ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : ''}</span>
-                    </th>
-                    <th className="px-4 py-3">Recommendation</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.length === 0 ? (
-                    <tr><td colSpan={6} className="px-4 py-12 text-center text-slate-500">No matching stocks</td></tr>
-                  ) : paged.map(r => {
-                    const cfg = REC_LABELS[r.recommendation] || REC_LABELS['Watchlist'];
-                    return (
-                      <tr key={r.symbol} className="border-b border-white/[0.02] transition hover:bg-white/[0.02]">
-                        <td className="px-4 py-3">
-                          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/[0.04] font-mono text-[10px] text-slate-400">{r.rank}</span>
-                        </td>
-                        <td className="px-4 py-3 font-mono font-semibold text-white">{r.symbol}</td>
-                        <td className="px-4 py-3 text-slate-300">{r.company}</td>
-                        <td className={`px-4 py-3 font-mono font-medium ${r.predicted_return >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{fmtReturn(r.predicted_return)}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="h-1.5 w-12 overflow-hidden rounded-full bg-white/[0.06]">
-                              <div className={`h-full rounded-full ${r.confidence >= 80 ? 'bg-emerald-500' : r.confidence >= 60 ? 'bg-yellow-500' : 'bg-rose-500'}`}
-                                style={{ width: `${r.confidence}%` }} />
-                            </div>
-                            <span className="font-mono text-slate-400">{r.confidence}%</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${cfg.bg} ${cfg.color}`}>
-                            <cfg.icon className="h-2.5 w-2.5" />
-                            <span className="text-[9px] font-medium">{cfg.label}</span>
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-white/[0.04] px-5 py-3">
-                <span className="text-[10px] text-slate-500">{filtered.length} stocks</span>
-                <div className="flex gap-1">
-                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                    const start = Math.max(1, Math.min(page - 2, totalPages - 4));
-                    const p = start + i;
-                    if (p > totalPages) return null;
-                    return (
-                      <button key={p} onClick={() => setPage(p)}
-                        className={`min-w-[28px] rounded-lg px-2 py-1 text-[10px] transition ${p === page ? 'bg-cyan-500/15 text-cyan-300' : 'text-slate-500 hover:bg-white/[0.06]'}`}>
-                        {p}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+          <StatCard
+            icon={<Target className="h-4 w-4" />}
+            label="Avg Return"
+            accent="gold"
+            meta={<span className="w-full text-center text-[12px] font-medium text-[#8E9AB5]">Predicted</span>}
+          >
+            {loading ? <StatValue>—</StatValue> : (
+              <StatValue><span className={avgReturn >= 0 ? 'text-[#39B58C]' : 'text-[#DD6455]'}>{fmtReturn(avgReturn)}</span></StatValue>
             )}
-          </>
-        )}
-      </div>
+          </StatCard>
 
-      {/* ═══════════ BEST OPPORTUNITY ═══════════ */}
-      {best && (
-        <div className="mb-8">
-          <h2 className="mb-4 text-sm font-semibold text-white">Best Opportunity</h2>
-          <div className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/8 to-cyan-500/8 p-6 sm:p-8">
-            <div className="absolute -right-20 -top-20 h-60 w-60 rounded-full bg-emerald-500/10 blur-3xl" />
-            <div className="relative z-10">
-              <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[10px] font-medium text-emerald-300">
-                <Award className="h-3 w-3" />
-                #1 Pick
-              </div>
-              <div className="grid gap-6 lg:grid-cols-2">
-                <div>
-                  <h3 className="text-2xl font-bold text-white">{best.company}</h3>
-                  <p className="mt-1 font-mono text-xs text-slate-500">{best.symbol} · {best.sector} · {best.market_cap_category}</p>
-                  <div className="mt-4 grid grid-cols-2 gap-4">
-                    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 text-center">
-                      <p className="text-[9px] text-slate-500">Predicted Return</p>
-                      <p className="text-3xl font-bold text-emerald-400">{fmtReturn(best.predicted_return)}</p>
-                    </div>
-                    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 text-center">
-                      <p className="text-[9px] text-slate-500">AI Confidence</p>
-                      <p className="text-3xl font-bold text-white">{best.confidence}%</p>
-                    </div>
+          <StatCard
+            icon={<Award className="h-4 w-4" />}
+            label="Top Return"
+            accent="gold"
+            meta={<span className="w-full text-center text-[12px] font-medium text-[#8E9AB5]">Highest predicted</span>}
+          >
+            {loading ? <StatValue>—</StatValue> : (
+              <StatValue><span className={highest >= 0 ? 'text-[#39B58C]' : 'text-[#DD6455]'}>{fmtReturn(highest)}</span></StatValue>
+            )}
+          </StatCard>
+        </div>
+
+        {/* ──── BEST OPPORTUNITY ──── */}
+        {best && !loading && (
+          <div className="mb-10">
+            <div className="nx-panel-card overflow-hidden">
+              <div className="flex flex-wrap items-center gap-x-8 gap-y-4 p-6">
+                <div className="flex items-center gap-4 min-w-0 flex-1">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[4px] border border-[#D4A657]/30 bg-[#D4A657]/10 text-[#D4A657]">
+                    <Award className="w-6 h-6" />
                   </div>
-                  <p className="mt-4 text-xs leading-relaxed text-slate-400">
-                    AI model identifies strong fundamentals with attractive valuation, robust growth metrics, and favorable sector positioning. High confidence in predicted return.
-                  </p>
+                  <div className="min-w-0">
+                    <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-[#D4A657]/30 bg-[#D4A657]/10 px-2.5 py-0.5 text-[10px] font-semibold text-[#D4A657]">
+                      <Sparkles className="w-3 h-3" /> #1 Pick
+                    </div>
+                    <h4 className="text-lg font-semibold text-[#EBEEF4]" style={SERIF}>{best.company}</h4>
+                    <p className="text-xs text-[#5C6883]">{best.symbol} · {best.sector} · {best.market_cap_category}</p>
+                  </div>
                 </div>
-                <div className="flex flex-col justify-center">
-                  <p className="mb-3 text-xs font-medium text-slate-400">Confidence Meter</p>
-                  <div className="mb-2 h-3 overflow-hidden rounded-full bg-white/[0.06]">
-                    <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-1000"
-                      style={{ width: `${best.confidence}%` }} />
+                <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+                  <div className="text-center">
+                    <p className="mb-0.5 text-[10px] uppercase tracking-wider text-[#5C6883]">Predicted Return</p>
+                    <p className={`text-2xl font-medium ${best.predicted_return >= 0 ? 'text-[#39B58C]' : 'text-[#DD6455]'}`} style={SERIF}>
+                      {fmtReturn(best.predicted_return)}
+                    </p>
                   </div>
-                  <div className="flex justify-between text-[10px] text-slate-600">
-                    <span>0%</span>
-                    <span>{best.confidence}% AI Confidence</span>
-                    <span>100%</span>
+                  <div className="text-center">
+                    <p className="mb-0.5 text-[10px] uppercase tracking-wider text-[#5C6883]">Confidence</p>
+                    <p className="text-2xl font-medium text-[#EBEEF4]" style={SERIF}>{best.confidence}%</p>
                   </div>
-                  <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-4 py-2">
-                    <TrendingUp className="h-4 w-4 text-emerald-400" />
-                    <span className="text-xs font-semibold text-emerald-300">
-                      {best.recommendation === 'Strong Buy' ? 'Strong Buy Recommendation' : best.recommendation}
-                    </span>
+                  <div className="flex items-center gap-2 rounded-full border border-[#1B2438] bg-[#0B111C] px-4 py-2">
+                    <TrendingUp className={`w-4 h-4 ${best.predicted_return >= 0 ? 'text-[#39B58C]' : 'text-[#DD6455]'}`} />
+                    <span className="text-xs font-semibold text-[#8E9AB5]">{best.recommendation}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="nx-panel-card-meta">
+                <p className="nx-panel-name">{best.symbol}</p>
+                <p className="nx-panel-chg">AI rank #{best.rank}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ──── TOOLBAR ──── */}
+        <div className="mt-8 mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="relative flex-1 max-w-md">
+            <div className={`flex items-center gap-4 rounded-[4px] border bg-[#0B111C] px-5 py-3.5 transition-all duration-300 ${
+              search ? 'border-[#D4A657]/50 shadow-[0_0_14px_rgba(212,166,87,0.10)]' : 'border-[#26314A] hover:border-[#26314A]'
+            }`}>
+              <Search className={`w-5 h-5 shrink-0 transition-colors duration-300 ${search ? 'text-[#D4A657]' : 'text-[#5C6883]'}`} />
+              <input
+                type="text"
+                value={search}
+                onChange={e => { setSearch(e.target.value); setPage(1); }}
+                placeholder="Search by symbol or company..."
+                className="flex-1 bg-transparent text-sm text-[#EBEEF4] placeholder-[#5C6883] outline-none"
+                suppressHydrationWarning
+              />
+              {search && (
+                <button onClick={() => setSearch('')} className="p-1 rounded-full text-[#5C6883] hover:bg-[#1B2438] hover:text-[#EBEEF4] transition">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-1.5 rounded-[3px] border px-3.5 py-2.5 text-xs transition-all duration-200 ${
+                showFilters ? 'border-[#D4A657]/50 bg-[#D4A657]/10 text-[#D4A657]' : 'border-[#1B2438] bg-[#0B111C] text-[#8E9AB5] hover:border-[#26314A] hover:text-[#EBEEF4]'
+              }`}
+            >
+              <Filter className="w-3.5 h-3.5" /> Filters
+            </button>
+            <button
+              onClick={exportCsv}
+              disabled={exporting === 'csv' || !recos.length}
+              className="flex items-center gap-1.5 rounded-[3px] border border-[#1B2438] bg-[#0B111C] px-3.5 py-2.5 text-xs text-[#8E9AB5] transition hover:border-[#26314A] hover:text-[#EBEEF4] disabled:opacity-40"
+            >
+              <Download className="w-3.5 h-3.5" /> {exporting === 'csv' ? 'Exporting...' : 'CSV'}
+            </button>
+          </div>
+        </div>
+
+        {/* ──── FILTER PANEL ──── */}
+        {showFilters && (
+          <div className="mb-8">
+            <div className="rounded-[4px] border border-[#1B2438] bg-[#121B2C] p-6">
+              <div className="mb-5 flex items-center justify-between">
+                <h3 className="text-xs font-semibold text-[#EBEEF4]">Filters</h3>
+                <button
+                  onClick={() => { setSelectedSectors([]); setSelectedMcap([]); setSelectedRec([]); setMinReturn(-30); }}
+                  className="text-[11px] text-[#D4A657] hover:text-[#EBEEF4] transition"
+                >
+                  Reset
+                </button>
+              </div>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <p className="mb-2.5 text-[10px] font-medium uppercase tracking-wider text-[#8E9AB5]">Sector</p>
+                  <div className="max-h-32 space-y-2 overflow-y-auto pr-1">
+                    {sectors.map(s => (
+                      <label key={s} className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={selectedSectors.includes(s)}
+                          onChange={() => setSelectedSectors(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])}
+                          className="h-3.5 w-3.5 rounded border-[#26314A] bg-[#0B111C] accent-[#D4A657]" />
+                        <span className="text-[11px] text-[#8E9AB5]">{s}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-2.5 text-[10px] font-medium uppercase tracking-wider text-[#8E9AB5]">Market Cap</p>
+                  <div className="space-y-2">
+                    {mcaps.map(s => (
+                      <label key={s} className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={selectedMcap.includes(s)}
+                          onChange={() => setSelectedMcap(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])}
+                          className="h-3.5 w-3.5 rounded border-[#26314A] bg-[#0B111C] accent-[#D4A657]" />
+                        <span className="text-[11px] text-[#8E9AB5]">{s}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-2.5 text-[10px] font-medium uppercase tracking-wider text-[#8E9AB5]">Recommendation</p>
+                  <div className="space-y-2">
+                    {recTypes.map(s => (
+                      <label key={s} className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={selectedRec.includes(s)}
+                          onChange={() => setSelectedRec(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])}
+                          className="h-3.5 w-3.5 rounded border-[#26314A] bg-[#0B111C] accent-[#D4A657]" />
+                        <span className="text-[11px] text-[#8E9AB5]">{s}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-2.5 text-[10px] font-medium uppercase tracking-wider text-[#8E9AB5]">Min Return: <span className="text-[#D4A657]">{minReturn}%</span></p>
+                  <input type="range" min={-30} max={40} value={minReturn} onChange={e => setMinReturn(Number(e.target.value))}
+                    className="w-full accent-[#D4A657]" />
+                  <div className="mt-1 flex justify-between text-[10px] text-[#5C6883]">
+                    <span>-30%</span><span>+40%</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ═══════════ CHARTS ═══════════ */}
-      {!loading && recos.length > 0 && (
-        <div className="mb-8">
-          {/* Top 10 */}
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
-            <h3 className="mb-4 text-xs font-semibold text-white">Top 10 Returns</h3>
-            <BarChart data={top10.map(r => ({ label: r.symbol, value: r.predicted_return }))} color="cyan" />
+        {/* ──── RANKING TABLE ──── */}
+        <div className="mb-10 overflow-hidden rounded-[4px] border border-[#1B2438]">
+          <div className="flex items-center justify-between border-b border-[#1B2438] bg-[#121B2C] px-5 py-4">
+            <h2 className="text-sm font-semibold text-[#EBEEF4]">Stock Rankings</h2>
+            <span className="text-[11px] text-[#5C6883]">{filtered.length} stocks</span>
           </div>
+          {loading ? (
+            <div className="px-5 py-16 text-center">
+              <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin text-[#D4A657]" />
+              <p className="text-xs text-[#5C6883]">Analyzing stocks with AI model...</p>
+            </div>
+          ) : error ? (
+            <div className="px-5 py-16 text-center">
+              <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-[#DD6455]" />
+              <p className="text-sm text-[#DD6455]">{error}</p>
+              <button onClick={() => setNonce(n => n + 1)} className="mt-3 rounded-[3px] border border-[#1B2438] bg-[#0B111C] px-4 py-2 text-xs text-[#8E9AB5] transition hover:border-[#26314A] hover:text-[#EBEEF4]">Retry</button>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-[#1B2438] text-[9px] uppercase tracking-wider text-[#5C6883]">
+                      <th className="px-5 py-3 w-10">#</th>
+                      <th className="px-5 py-3">Symbol</th>
+                      <th className="px-5 py-3">Company</th>
+                      <th className="px-5 py-3 cursor-pointer select-none" onClick={() => toggleSort('return')}>
+                        <span className={`flex items-center gap-1 transition-colors ${sortBy === 'return' ? 'text-[#D4A657]' : ''}`}>
+                          Return {sortBy === 'return' ? (sortAsc ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : ''}
+                        </span>
+                      </th>
+                      <th className="px-5 py-3 cursor-pointer select-none" onClick={() => toggleSort('confidence')}>
+                        <span className={`flex items-center gap-1 transition-colors ${sortBy === 'confidence' ? 'text-[#D4A657]' : ''}`}>
+                          Confidence {sortBy === 'confidence' ? (sortAsc ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : ''}
+                        </span>
+                      </th>
+                      <th className="px-5 py-3">Recommendation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.length === 0 ? (
+                      <tr><td colSpan={6} className="px-5 py-12 text-center text-[#5C6883]">No matching stocks</td></tr>
+                    ) : paged.map(r => {
+                      const cfg = REC_LABELS[r.recommendation] || REC_LABELS['Watchlist'];
+                      const Icon = cfg.icon;
+                      return (
+                        <tr key={r.symbol} className="border-b border-[#1B2438] transition hover:bg-[#1B2438]/40">
+                          <td className="px-5 py-3">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-[3px] border border-[#1B2438] bg-[#0B111C] font-mono text-[10px] text-[#5C6883]">{r.rank}</span>
+                          </td>
+                          <td className="px-5 py-3 font-mono font-semibold text-[#EBEEF4]">{r.symbol}</td>
+                          <td className="px-5 py-3 text-[#8E9AB5]">{r.company}</td>
+                          <td className={`px-5 py-3 font-mono font-medium ${r.predicted_return >= 0 ? 'text-[#39B58C]' : 'text-[#DD6455]'}`}>{fmtReturn(r.predicted_return)}</td>
+                          <td className="px-5 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-1.5 w-12 overflow-hidden rounded-full bg-[#1B2438]">
+                                <div className={`h-full rounded-full ${clampConfidence(r.confidence) >= 80 ? 'bg-[#39B58C]' : clampConfidence(r.confidence) >= 60 ? 'bg-[#D4A657]' : 'bg-[#DD6455]'}`}
+                                  style={{ width: `${clampConfidence(r.confidence)}%` }} />
+                              </div>
+                              <span className="font-mono text-[#5C6883]">{clampConfidence(r.confidence)}%</span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3">
+                            <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 ${cfg.border} ${cfg.bg} ${cfg.color}`}>
+                              <Icon className="h-2.5 w-2.5" />
+                              <span className="text-[10px] font-medium">{cfg.label}</span>
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-[#1B2438] px-5 py-4">
+                  <span className="text-[11px] text-[#5C6883]">Page {page} of {totalPages}</span>
+                  <div className="flex gap-1">
+                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                      const start = Math.max(1, Math.min(page - 2, totalPages - 4));
+                      const p = start + i;
+                      if (p > totalPages) return null;
+                      return (
+                        <button key={p} onClick={() => setPage(p)}
+                          className={`min-w-[28px] rounded-[3px] px-2 py-1 text-[10px] transition ${p === page ? 'bg-[#D4A657]/15 text-[#D4A657]' : 'text-[#5C6883] hover:bg-[#1B2438] hover:text-[#EBEEF4]'}`}>
+                          {p}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
-      )}
 
-      {/* ═══════════ FOOTER ═══════════ */}
-      <footer className="mt-12 border-t border-white/[0.06] py-8 text-center">
-        <div className="mb-2 inline-flex items-center gap-1.5 text-[10px] text-slate-600">
-          <Shield className="h-3 w-3" />
-          Risk Disclaimer
-        </div>
-        <p className="mx-auto max-w-xl text-[10px] leading-relaxed text-slate-600">
-          Recommendations are generated using machine learning models and are not financial advice.
-          Past performance does not guarantee future results. Always do your own research before investing.
-        </p>
-      </footer>
-    </div>
+        {/* ──── TOP 10 CHART ──── */}
+        {!loading && recos.length > 0 && (
+          <div className="rounded-[4px] border border-[#1B2438] bg-[#121B2C] p-6">
+            <h3 className="mb-5 text-[11px] font-semibold uppercase tracking-wider text-[#8E9AB5]">Top 10 Returns</h3>
+            <BarChart data={top10.map(r => ({ label: r.symbol, value: r.predicted_return }))} />
+          </div>
+        )}
+
+        {/* ──── FOOTER ──── */}
+        <footer className="mt-10 border-t border-[#1B2438] py-6 text-center">
+          <div className="mb-2 inline-flex items-center gap-1.5 text-[10px] text-[#5C6883]">
+            <Shield className="h-3 w-3" /> Risk Disclaimer
+          </div>
+          <p className="mx-auto max-w-xl text-[10px] leading-relaxed text-[#5C6883]">
+            Recommendations are generated using machine learning models and are not financial advice.
+            Past performance does not guarantee future results. Always do your own research before investing.
+          </p>
+        </footer>
+      </div>
+    </PageTransition>
   );
 }

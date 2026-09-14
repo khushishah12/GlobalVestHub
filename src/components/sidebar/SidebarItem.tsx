@@ -27,10 +27,10 @@ export default function SidebarItem({ item, collapsed, onNavigate, onAction, isA
   const accent = ACCENT_STYLES[item.accent];
   const Icon = item.icon;
 
-  const commonClasses = `group relative flex w-full min-h-[56px] items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all duration-200 ${
+  const commonClasses = `group relative flex w-full min-h-[48px] items-center gap-3 rounded-[3px] px-3 py-2.5 text-left transition-all duration-200 ${
     isActive
-      ? `bg-white/[0.08] ${accent.glow}`
-      : 'hover:bg-white/[0.05] hover:scale-[1.02]'
+      ? `bg-[#D4A657]/[0.08] ${accent.glow}`
+      : 'hover:bg-[#121B2C] hover:text-[#EBEEF4]'
   } ${collapsed ? 'justify-center' : 'justify-start'} ${isActionLoading ? 'opacity-70 pointer-events-none' : ''}`;
 
   const content = (
@@ -38,38 +38,38 @@ export default function SidebarItem({ item, collapsed, onNavigate, onAction, isA
       {isActive && (
         <motion.span
           layoutId="sidebar-active-bar"
-          className={`absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-full bg-gradient-to-b ${accent.active}`}
+          className={`absolute left-0 top-1/2 h-7 w-[3px] -translate-y-1/2 rounded-r-full bg-gradient-to-b ${accent.active}`}
           transition={{ type: 'spring', stiffness: 380, damping: 30 }}
         />
       )}
 
       <span
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-white/10 bg-black/30 transition-transform group-hover:scale-110 ${
-          isActive ? accent.icon : 'text-slate-400 group-hover:text-white'
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] border border-[#1B2438] bg-[#0B111C] transition-transform group-hover:scale-110 ${
+          isActive ? accent.icon : 'text-[#5C6883] group-hover:text-[#EBEEF4]'
         }`}
       >
-        {isActionLoading ? <Loader2 size={18} className="animate-spin" /> : <Icon size={18} />}
+        {isActionLoading ? <Loader2 size={16} className="animate-spin" /> : <Icon size={16} />}
       </span>
 
       {!collapsed && (
         <span className="min-w-0 flex-1">
           <span
-            className={`block truncate text-sm font-semibold ${
-              isActive ? 'text-white' : 'text-slate-300 group-hover:text-white'
+            className={`block truncate text-[13px] font-semibold ${
+              isActive ? 'text-[#EBEEF4]' : 'text-[#8E9AB5] group-hover:text-[#EBEEF4]'
             }`}
           >
             {isActionLoading ? 'Discovering...' : item.label}
           </span>
-          <span className="block truncate text-[10px] text-slate-500">
+          <span className="block truncate text-[10px] text-[#5C6883]">
             {isActionLoading ? 'Fetching stocks...' : item.description}
           </span>
         </span>
       )}
 
       {collapsed && (
-        <span className="pointer-events-none absolute left-full z-50 ml-3 hidden whitespace-nowrap rounded-md border border-white/10 bg-slate-900/95 px-3 py-2 text-xs text-white shadow-xl group-hover:block">
+        <span className="pointer-events-none absolute left-full z-50 ml-3 hidden whitespace-nowrap rounded-[3px] border border-[#1B2438] bg-[#0B111C] px-3 py-2 text-xs text-[#EBEEF4] shadow-xl group-hover:block">
           <span className="font-semibold">{isActionLoading ? 'Discovering...' : item.label}</span>
-          <span className="mt-0.5 block text-slate-400">
+          <span className="mt-0.5 block text-[#5C6883]">
             {isActionLoading ? 'Fetching stocks...' : item.description}
           </span>
         </span>

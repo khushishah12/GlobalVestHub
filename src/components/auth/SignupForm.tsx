@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { createClient } from '../../lib/supabase/client';
 import { Eye, EyeOff, UserPlus } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -10,7 +9,6 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
 export default function SignupForm() {
-  const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -71,8 +69,8 @@ export default function SignupForm() {
 
       // 3. Redirect user to /login
       window.location.href = '/login?registered=true';
-    } catch (err: any) {
-      setError(err?.message || 'An unexpected error occurred during signup.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred during signup.');
     } finally {
       setLoading(false);
     }
@@ -81,7 +79,7 @@ export default function SignupForm() {
   return (
     <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
       {error && (
-        <div className="rounded-lg bg-rose-500/10 border border-rose-500/30 p-3 text-sm text-rose-400">
+        <div className="rounded-[3px] border border-[#DD6455]/30 bg-[#DD6455]/10 p-3 text-sm text-[#DD6455]">
           {error}
         </div>
       )}
@@ -127,7 +125,7 @@ export default function SignupForm() {
           />
           <button
             type="button"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5C6883] hover:text-[#EBEEF4] transition-colors"
             onClick={() => setShowPassword(!showPassword)}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
@@ -141,9 +139,9 @@ export default function SignupForm() {
         Sign up
       </Button>
 
-      <p className="text-center text-sm text-slate-400 mt-2">
+      <p className="text-center text-sm text-[#8E9AB5] mt-2">
         Already have an account?{' '}
-        <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors">
+        <Link href="/login" className="text-[#D4A657] hover:text-[#E3B768] font-semibold transition-colors">
           Log in
         </Link>
       </p>

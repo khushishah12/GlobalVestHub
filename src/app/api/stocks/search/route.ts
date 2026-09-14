@@ -8,16 +8,25 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get('q')?.trim() || '';
-  if (!q || q.length < 1) {
+  const sector = request.nextUrl.searchParams.get('sector')?.trim() || '';
+
+  if (!q && !sector) {
     return NextResponse.json([]);
   }
 
   try {
-    const { data: stocks } = await supabase
+    let query = supabase
       .from('stocks')
-      .select('symbol, company_name, exchange, sector, industry')
-      .or(`symbol.ilike.%${q}%,company_name.ilike.%${q}%`)
-      .limit(20);
+      .select('symbol, company_name, exchange, sector, industry');
+
+    if (q) {
+      query = query.or(`symbol.ilike.%${q}%,company_name.ilike.%${q}%`);
+    }
+    if (sector) {
+      query = query.eq('sector', sector);
+    }
+
+    const { data: stocks } = await query.limit(20);
 
     if (!stocks || stocks.length === 0) {
       return NextResponse.json([]);
@@ -60,12 +69,24 @@ export async function GET(request: NextRequest) {
         change_percent: changePercent ? parseFloat(changePercent.toFixed(2)) : null,
         volume: quote?.regularMarketVolume ?? null,
         market_cap: quote?.marketCap ?? null,
+        hasQuote: !!price,
       };
     });
 
     enriched.sort((a: { volume: number | null }, b: { volume: number | null }) => (b.volume ?? 0) - (a.volume ?? 0));
+    const withQuote = enriched.filter(s => s.hasQuote);
 
-    return NextResponse.json(enriched, { headers: { 'Cache-Control': 'no-store' } });
+    const now = Math.floor(Date.now() / 1000);
+    const twoYearsBack = now - 86400 * 730;
+    const histChecks = await Promise.allSettled(
+      withQuote.map(s => yahooFinance.chart(s.symbol, { period1: twoYearsBack, period2: now, interval: '1mo', return: 'object' }))
+    );
+    const filtered = withQuote.filter((_, i) => {
+      const r = histChecks[i];
+      return r.status === 'fulfilled' && r.value?.indicators?.quote?.[0]?.close?.some((c: number | null) => c && c > 0);
+    });
+
+    return NextResponse.json(filtered, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {
     console.error('Search error:', err);
     return NextResponse.json({ error: 'Search failed' }, { status: 500 });

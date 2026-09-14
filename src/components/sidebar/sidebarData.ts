@@ -7,7 +7,6 @@ import {
   Database,
   CalendarDays,
   Briefcase,
-  Sparkles,
   Target,
   TrendingUp,
   Activity,
@@ -53,14 +52,6 @@ export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
     icon: BarChart3,
     accent: 'neutral',
     description: 'Candlesticks & indicators',
-  },
-  {
-    id: 'predict-signal',
-    label: 'Predict Signal',
-    href: '/dashboard/predict-signal',
-    icon: Sparkles,
-    accent: 'bullish',
-    description: 'AI stock signal prediction',
   },
   {
     id: 'stock-picker',
@@ -142,18 +133,18 @@ export const ACCENT_STYLES: Record<
   { active: string; glow: string; icon: string }
 > = {
   neutral: {
-    active: 'from-cyan-500/80 to-violet-500/80',
-    glow: 'shadow-[0_0_20px_rgba(0,229,255,0.25)]',
-    icon: 'text-cyan-400',
+    active: 'from-[#D4A657]/80 to-[#D4A657]/50',
+    glow: 'shadow-[0_0_16px_rgba(212,166,87,0.2)]',
+    icon: 'text-[#D4A657]',
   },
   bullish: {
-    active: 'from-emerald-400/90 to-cyan-400/80',
-    glow: 'shadow-[0_0_20px_rgba(0,255,136,0.3)]',
-    icon: 'text-emerald-400',
+    active: 'from-[#39B58C]/90 to-[#39B58C]/60',
+    glow: 'shadow-[0_0_16px_rgba(57,181,140,0.25)]',
+    icon: 'text-[#39B58C]',
   },
   bearish: {
-    active: 'from-rose-500/90 to-orange-500/70',
-    glow: 'shadow-[0_0_20px_rgba(255,51,102,0.35)]',
-    icon: 'text-rose-400',
+    active: 'from-[#DD6455]/90 to-[#DD6455]/60',
+    glow: 'shadow-[0_0_16px_rgba(221,100,85,0.3)]',
+    icon: 'text-[#DD6455]',
   },
 };
