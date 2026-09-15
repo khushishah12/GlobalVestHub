@@ -16,7 +16,7 @@ export default function LoginPage() {
         <div className="nx-wrap">
           <nav className="nx-nav">
             <Link href="/" className="nx-logo">
-              NEXUS<span className="tick">.AI</span>
+              GlobalVestHub
             </Link>
             <div className="nx-nav-actions">
               <Link href="/" className="nx-btn nx-btn-ghost">
@@ -39,7 +39,7 @@ export default function LoginPage() {
                 Welcome <em>back</em>
               </h1>
               <p className="nx-auth-sub">
-                Sign in to access your NEXUS terminal and market intelligence.
+                Sign in to access your GlobalVestHub terminal and market intelligence.
               </p>
               <Suspense
                 fallback={

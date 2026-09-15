@@ -86,7 +86,7 @@ const STEPS = [
   {
     num: 'One',
     title: 'Build your watchlist',
-    desc: 'Add the tickers, sectors or a whole portfolio import. NEXUS.AI starts scanning them immediately.',
+    desc: 'Add the tickers, sectors or a whole portfolio import. GlobalVestHub starts scanning them immediately.',
   },
   {
     num: 'Two',
@@ -154,15 +154,15 @@ const PLANS = [
 const FAQS = [
   {
     q: 'Is my financial data secure?',
-    a: 'Yes. NEXUS never sells your data. All holdings and account details are encrypted at rest and in transit, and we use standard OAuth connections with read-only permissions by default.',
+    a: 'Yes. GlobalVestHub never sells your data. All holdings and account details are encrypted at rest and in transit, and we use standard OAuth connections with read-only permissions by default.',
   },
   {
     q: 'Does the AI replace financial advice?',
-    a: 'No. NEXUS surfaces data-driven signals and analytics to inform your decisions, but every trade remains your call. Nothing we show is personalised financial advice.',
+    a: 'No. GlobalVestHub surfaces data-driven signals and analytics to inform your decisions, but every trade remains your call. Nothing we show is personalised financial advice.',
   },
   {
     q: 'Which markets are supported?',
-    a: 'NEXUS currently covers the NSE and BSE across equity, indices and derivatives, with live news and technicals for thousands of listed securities.',
+    a: 'GlobalVestHub currently covers the NSE and BSE across equity, indices and derivatives, with live news and technicals for thousands of listed securities.',
   },
   {
     q: 'Can I cancel my subscription anytime?',
@@ -231,7 +231,7 @@ export default function Home() {
         <div className="nx-wrap">
           <nav className="nx-nav">
             <Link href="/" className="nx-logo">
-              NEXUS<span className="tick">.AI</span>
+              GlobalVestHub
             </Link>
 
             <ul className={`nx-nav-links${mobileOpen ? ' open' : ''}`}>
@@ -276,7 +276,7 @@ export default function Home() {
               Read the market before the market reads itself. <em>Faster.</em>
             </h1>
             <p className="nx-lede">
-              NEXUS.AI scans price action, filings, earnings calls and
+              GlobalVestHub scans price action, filings, earnings calls and
               sentiment across 9,000+ tickers in real time, then tells you what
               actually changed — and why it matters.
             </p>
@@ -526,7 +526,7 @@ export default function Home() {
           <div className="nx-foot-grid">
             <div className="nx-foot-brand">
               <Link href="/" className="nx-logo">
-                NEXUS<span className="tick">.AI</span>
+                GlobalVestHub
               </Link>
               <p>
                 AI-driven market analysis for traders and analysts who need the
@@ -584,11 +584,11 @@ export default function Home() {
           </div>
           <div className="nx-foot-bottom">
             <p>
-              NEXUS.AI provides data-driven market analysis for informational
+              GlobalVestHub provides data-driven market analysis for informational
               purposes only and does not constitute financial advice. Trading
               involves risk, including loss of principal.
             </p>
-            <p>© {new Date().getFullYear()} NEXUS.AI</p>
+            <p>© {new Date().getFullYear()} GlobalVestHub</p>
           </div>
         </div>
       </footer>

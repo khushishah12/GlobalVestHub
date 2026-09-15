@@ -81,7 +81,7 @@ export default function Sidebar({
               className="text-[15px] font-medium tracking-wide"
               style={{ fontFamily: 'var(--nx-serif-font), Georgia, serif', fontStyle: 'italic' }}
             >
-              NEXUS<span className="text-[#D4A657]">.AI</span>
+              GlobalVestHub
             </span>
           )}
         </Link>

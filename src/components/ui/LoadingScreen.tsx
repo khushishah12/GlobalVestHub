@@ -28,7 +28,7 @@ export default function LoadingScreen() {
     <div className={`loading-screen ${progress === 100 ? 'fade-out' : ''}`}>
       <div className="loader-container">
         <div className="loader-logo">
-          NEXUS<span className="text-emerald-400">.AI</span>
+          GlobalVestHub
         </div>
         
         {/* Glow Ring */}

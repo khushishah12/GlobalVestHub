@@ -51,7 +51,7 @@ export default function HeroOverlay() {
       title: 'Access the Financial Matrix',
       subtitle: 'The full Next.js dashboard features custom watchlists, trading triggers, and deep portfolio analytics.',
       icon: <Terminal className="section-icon text-indigo-400" />,
-      tag: 'NEXUS TERMINAL',
+      tag: 'GlobalVestHub Terminal',
       primaryBtn: 'Log in',
       isFinal: true,
       primaryAction: goLogin,
@@ -63,7 +63,7 @@ export default function HeroOverlay() {
       <header className="main-header">
         <div className="logo-container">
           <span className="logo-pulse" />
-          <span className="logo-text">NEXUS<span className="logo-subtext">.AI</span></span>
+          <span className="logo-text">GlobalVestHub</span>
         </div>
         <nav className="desktop-nav">
           <a href="#" className="nav-link active">Terminal</a>

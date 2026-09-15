@@ -83,7 +83,7 @@ export const mockAISignal: AISignal = {
 
 export const mockNews: NewsArticle[] = [
   {
-    title: 'NEXUS Stocks Surge 8% on Record Earnings & AI Expansion',
+    title: 'GlobalVestHub Stocks Surge 8% on Record Earnings & AI Expansion',
     sentiment: 'positive',
     source: 'TechCrunch',
     time: '2 mins ago'
@@ -101,7 +101,7 @@ export const mockNews: NewsArticle[] = [
     time: '1 hour ago'
   },
   {
-    title: 'NEXUS Announces New Custom Silicon for Cloud Computing',
+    title: 'GlobalVestHub Announces New Custom Silicon for Cloud Computing',
     sentiment: 'positive',
     source: 'Wired',
     time: '3 hours ago'
@@ -113,7 +113,7 @@ export const mockNews: NewsArticle[] = [
     time: '5 hours ago'
   },
   {
-    title: 'Competitor Launch Fails to Slow Down NEXUS Dashboard Signups',
+    title: 'Competitor Launch Fails to Slow Down GlobalVestHub Dashboard Signups',
     sentiment: 'positive',
     source: 'VentureBeat',
     time: '7 hours ago'

@@ -18,7 +18,7 @@ export default function HologramCards() {
       change: '+4.8%',
       isPositive: true,
       color: '#00ff88',
-      desc: 'NEXUS index real-time value',
+      desc: 'GlobalVestHub index real-time value',
     },
     {
       id: 'ai-signal',

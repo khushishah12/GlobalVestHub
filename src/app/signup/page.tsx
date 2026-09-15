@@ -26,7 +26,7 @@ export default function SignupPage() {
         <div className="nx-wrap">
           <nav className="nx-nav">
             <Link href="/" className="nx-logo">
-              NEXUS<span className="tick">.AI</span>
+              GlobalVestHub
             </Link>
             <div className="nx-nav-actions">
               <Link href="/" className="nx-btn nx-btn-ghost">
@@ -50,7 +50,7 @@ export default function SignupPage() {
                 Create your <em>account</em>
               </h1>
               <p className="nx-auth-sub">
-                Join NEXUS.AI and unlock the full AI market terminal — live data, pattern detection and news sentiment.
+                Join GlobalVestHub and unlock the full AI market terminal — live data, pattern detection and news sentiment.
               </p>
               <Suspense
                 fallback={

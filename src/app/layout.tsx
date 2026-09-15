@@ -26,7 +26,7 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "NEXUS.AI | AI-Powered Stock Market Terminal",
+  title: "GlobalVestHub | AI-Powered Stock Market Terminal",
   description: "Smarter stock decisions, powered by AI. Live market data, predictive models, real-time news sentiment and pro-grade technicals in one professional terminal.",
 };
 
