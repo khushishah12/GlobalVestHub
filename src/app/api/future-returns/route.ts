@@ -6,7 +6,7 @@ import YahooFinance from 'yahoo-finance2';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const yahooFinance = new YahooFinance();
+const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
 const SYMBOLS = [
   'RELIANCE.NS', 'TCS.NS', 'HDFCBANK.NS', 'ICICIBANK.NS', 'INFY.NS',
@@ -17,15 +17,44 @@ const SYMBOLS = [
   'TECHM.NS', 'NESTLEIND.NS', 'BAJAJFINSV.NS',
 ];
 
-function mcapCategory(mcap: number): string {
-  if (mcap >= 5_000_000_000_000) return 'Mega Cap';
-  if (mcap >= 500_000_000_000) return 'Large Cap';
-  if (mcap >= 50_000_000_000) return 'Mid Cap';
-  return 'Small Cap';
+function safeGet<T>(obj: unknown, p: string, f: T): T {
+  try {
+    const v: unknown = p.split('.').reduce((a: unknown, k: string) => (a as Record<string, unknown> | null)?.[k], obj);
+    return (v ?? f) as T;
+  } catch { return f; }
 }
 
-async function fetchStockInfo(): Promise<any[]> {
-  const stocks: any[] = [];
+function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
+
+function num(...vals: unknown[]): number | undefined {
+  for (const v of vals) {
+    const rec = v as { raw?: unknown } | null;
+    const x = rec?.raw ?? v;
+    if (typeof x === 'number' && isFinite(x)) return x;
+  }
+  return undefined;
+}
+
+interface StockInfo {
+  symbol: string;
+  company: string;
+  sector: string;
+  industry: string;
+  market_cap: number;
+  price: number | null;
+  features: Record<string, number>;
+}
+
+interface Prediction {
+  symbol: string;
+  company: string;
+  predicted_return: number;
+  confidence: number;
+  recommendation?: string;
+}
+
+async function fetchAllFeatures(): Promise<StockInfo[]> {
+  const stocks: StockInfo[] = [];
   const BATCH = 5;
 
   for (let i = 0; i < SYMBOLS.length; i += BATCH) {
@@ -33,13 +62,57 @@ async function fetchStockInfo(): Promise<any[]> {
     const results = await Promise.allSettled(batch.map(async (sym) => {
       try {
         const q = await yahooFinance.quote(sym);
+        const qs = await yahooFinance.quoteSummary(sym, {
+          modules: ['financialData', 'defaultKeyStatistics', 'summaryDetail', 'summaryProfile'],
+        }).catch(() => null);
+        const fd: Record<string, unknown> = safeGet(qs, 'financialData', {});
+        const dks: Record<string, unknown> = safeGet(qs, 'defaultKeyStatistics', {});
+        const sd: Record<string, unknown> = safeGet(qs, 'summaryDetail', {});
+        const sp: Record<string, unknown> = safeGet(qs, 'summaryProfile', {});
+        const sector = sp.sector || q.sector || 'N/A';
+        const industry = sp.industry || q.industry || 'N/A';
+
+        const pe = num(q.trailingPE, sd.trailingPE, dks.trailingPE, fd.trailingPE) ?? 20;
+        const pb = num(fd.priceToBook, dks.priceToBook) ?? 3;
+        const roe = num(fd.returnOnEquity, fd.returnOnEquityTTM) ?? 0.15;
+        const de = num(fd.debtToEquity) ?? 50;
+        const pm = num(fd.profitMargins) ?? 0.10;
+        const mcap = q.marketCap ?? num(sd.marketCap, dks.marketCap) ?? 100_000_000_000;
+        const rg = num(fd.revenueGrowth) ?? 0.06;
+        const eg = num(fd.earningsGrowth) ?? 0.06;
+
+        const normPE = clamp(100 - ((pe - 5) / 50) * 100, 0, 100);
+        const normPB = clamp(100 - ((pb - 0.5) / 8) * 100, 0, 100);
+        const peg = pe / (roe * 100 || 1);
+        const normPEG = peg > 0 ? clamp(100 - peg * 20, 0, 100) : 50;
+        const valuation_score = Math.round(normPE * 0.35 + normPB * 0.35 + normPEG * 0.30);
+
+        const normDE = clamp(100 - (de / 250) * 100, 0, 100);
+        const normPM = clamp(50 + pm * 100, 0, 100);
+        const financial_stability_score = Math.round(normDE * 0.5 + normPM * 0.5);
+        const debt_risk_score = Math.round(clamp(100 - normDE, 0, 100));
+
+        const normEG = clamp(50 + eg * 80, 0, 100);
+        const normRG = clamp(50 + rg * 80, 0, 100);
+        const growth_score = Math.round(normEG * 0.5 + normRG * 0.5);
+
         return {
           symbol: sym.replace('.NS', '').replace('.BO', ''),
           company: q.longName ?? q.shortName ?? sym.replace('.NS', ''),
-          sector: q.sector ?? (q as any).sector ?? 'N/A',
-          industry: q.industry ?? 'N/A',
-          market_cap: q.marketCap ?? 0,
-          price: q.regularMarketPrice ?? 0,
+          features: {
+            valuation_score,
+            financial_stability_score,
+            debt_risk_score,
+            growth_score,
+            pe_ratio: pe,
+            pb_ratio: pb,
+            roe: roe * 100,
+            market_cap: mcap,
+          },
+          sector,
+          industry,
+          market_cap: mcap,
+          price: q.regularMarketPrice,
         };
       } catch {
         return null;
@@ -52,7 +125,7 @@ async function fetchStockInfo(): Promise<any[]> {
   return stocks;
 }
 
-function runPython(symbols: string[]): Promise<any[]> {
+function runPython(stocks: StockInfo[]): Promise<Prediction[]> {
   return new Promise((resolve) => {
     const scriptPath = path.join(process.cwd(), 'Models', 'future_returns_predict.py');
     const pythonPath = 'C:\\Users\\KHUSHI\\AppData\\Local\\Programs\\Python\\Python313\\python.exe';
@@ -64,27 +137,32 @@ function runPython(symbols: string[]): Promise<any[]> {
     proc.on('close', (code) => {
       if (code !== 0) return resolve([]);
       try {
-        const parsed = JSON.parse(stdout.trim());
-        resolve(Array.isArray(parsed) ? parsed : []);
+        const parsed: unknown = JSON.parse(stdout.trim());
+        resolve(Array.isArray(parsed) ? (parsed as Prediction[]) : []);
       } catch {
         resolve([]);
       }
     });
     proc.on('error', () => resolve([]));
 
-    proc.stdin.write(JSON.stringify({ symbols }));
+    proc.stdin.write(JSON.stringify({ stocks }));
     proc.stdin.end();
   });
 }
 
+function mcapCategory(mcap: number): string {
+  if (mcap >= 5_000_000_000_000) return 'Mega Cap';
+  if (mcap >= 500_000_000_000) return 'Large Cap';
+  if (mcap >= 50_000_000_000) return 'Mid Cap';
+  return 'Small Cap';
+}
+
 export async function GET() {
   try {
-    const [stocks, predictions] = await Promise.all([
-      fetchStockInfo(),
-      runPython(SYMBOLS),
-    ]);
+    const stocks = await fetchAllFeatures();
+    const predictions = await runPython(stocks);
 
-    const enriched = predictions.map((r: any, i: number) => {
+    const enriched = predictions.map((r: Prediction, i: number) => {
       const stock = stocks.find(s => s.symbol === r.symbol);
       return {
         ...r,

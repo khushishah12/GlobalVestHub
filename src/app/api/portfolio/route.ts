@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { runSql } from '@/lib/run-sql';
+import { resolveUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS public.portfolio_holdings (
 );
 CREATE INDEX IF NOT EXISTS idx_portfolio_holdings_user_id ON public.portfolio_holdings (user_id);
 CREATE INDEX IF NOT EXISTS idx_portfolio_holdings_symbol ON public.portfolio_holdings (stock_symbol);
+ALTER TABLE public.portfolio_holdings ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'open';
+ALTER TABLE public.portfolio_holdings ADD COLUMN IF NOT EXISTS sell_price NUMERIC(18,4);
+ALTER TABLE public.portfolio_holdings ADD COLUMN IF NOT EXISTS sell_date DATE;
 ALTER TABLE public.portfolio_holdings ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.portfolio_holdings TO authenticated;
 `;
@@ -65,8 +68,7 @@ export async function GET() {
   try {
     await runSql(CREATE_TABLE_SQL);
 
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await resolveUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     if (!supabaseAdmin) return NextResponse.json({ error: 'Service not configured' }, { status: 500 });
@@ -137,8 +139,7 @@ export async function POST(request: NextRequest) {
   try {
     await runSql(CREATE_TABLE_SQL);
 
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await resolveUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     if (!supabaseAdmin) return NextResponse.json({ error: 'Service not configured' }, { status: 500 });
