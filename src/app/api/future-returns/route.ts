@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { spawn } from 'child_process';
-import path from 'path';
 import YahooFinance from 'yahoo-finance2';
+import { predictReturns, recommendationFor } from '@/lib/ml';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -43,14 +42,6 @@ interface StockInfo {
   market_cap: number;
   price: number | null;
   features: Record<string, number>;
-}
-
-interface Prediction {
-  symbol: string;
-  company: string;
-  predicted_return: number;
-  confidence: number;
-  recommendation?: string;
 }
 
 async function fetchAllFeatures(): Promise<StockInfo[]> {
@@ -125,31 +116,6 @@ async function fetchAllFeatures(): Promise<StockInfo[]> {
   return stocks;
 }
 
-function runPython(stocks: StockInfo[]): Promise<Prediction[]> {
-  return new Promise((resolve) => {
-    const scriptPath = path.join(process.cwd(), 'Models', 'future_returns_predict.py');
-    const pythonPath = 'C:\\Users\\KHUSHI\\AppData\\Local\\Programs\\Python\\Python313\\python.exe';
-    const proc = spawn(pythonPath, [scriptPath], { stdio: ['pipe', 'pipe', 'pipe'] });
-    let stdout = '';
-
-    proc.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
-    proc.stderr.on('data', () => {});
-    proc.on('close', (code) => {
-      if (code !== 0) return resolve([]);
-      try {
-        const parsed: unknown = JSON.parse(stdout.trim());
-        resolve(Array.isArray(parsed) ? (parsed as Prediction[]) : []);
-      } catch {
-        resolve([]);
-      }
-    });
-    proc.on('error', () => resolve([]));
-
-    proc.stdin.write(JSON.stringify({ stocks }));
-    proc.stdin.end();
-  });
-}
-
 function mcapCategory(mcap: number): string {
   if (mcap >= 5_000_000_000_000) return 'Mega Cap';
   if (mcap >= 500_000_000_000) return 'Large Cap';
@@ -160,13 +126,19 @@ function mcapCategory(mcap: number): string {
 export async function GET() {
   try {
     const stocks = await fetchAllFeatures();
-    const predictions = await runPython(stocks);
+    const ranked = stocks
+      .map((stock) => {
+        const out = predictReturns(stock.features);
+        return { symbol: stock.symbol, company: stock.company, ...out };
+      })
+      .sort((a, b) => b.predicted_return - a.predicted_return);
 
-    const enriched = predictions.map((r: Prediction, i: number) => {
+    const n = ranked.length;
+    const predictions = ranked.map((r, i) => {
       const stock = stocks.find(s => s.symbol === r.symbol);
       return {
         ...r,
-        recommendation: r.recommendation || 'Watchlist',
+        recommendation: recommendationFor(n > 0 ? i / n : 1),
         sector: stock?.sector || 'N/A',
         industry: stock?.industry || 'N/A',
         market_cap: stock?.market_cap || 0,
@@ -176,7 +148,7 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ predictions: enriched, updated_at: new Date().toISOString() });
+    return NextResponse.json({ predictions, updated_at: new Date().toISOString() });
   } catch (err) {
     console.error('Future returns error:', err);
     return NextResponse.json({ error: 'Failed to generate predictions' }, { status: 500 });
